@@ -49,6 +49,7 @@
                   <button class="mode-button active" data-mode="mixed">오늘</button>
                   <button class="mode-button" data-mode="weak">약점</button>
                   <button class="mode-button" data-mode="new">새 단어</button>
+                  <button class="mode-button" data-mode="paragraph">문단</button>
                   <button class="mode-button" data-mode="all">전체</button>
                 </div>
                 <button class="icon-button" id="shuffleButton" title="다른 문제">↻</button>
@@ -63,6 +64,7 @@
                 <div class="question-meta">
                   <span id="questionSource">source</span>
                   <span id="questionTags">tag</span>
+                  <span id="questionTimer">0초</span>
                 </div>
                 <p class="sentence" id="questionSentence"></p>
                 <p class="prompt" id="questionPrompt"></p>
@@ -75,6 +77,10 @@
                   <p id="sentenceKo"></p>
                   <p id="blankSentence"></p>
                   <p id="grammarNote"></p>
+                  <div class="self-check">
+                    <button class="secondary-button" id="unsureButton">맞혔지만 헷갈림</button>
+                    <button class="secondary-button" id="flagButton">복습 체크</button>
+                  </div>
                 </div>
                 <div class="question-actions">
                   <button class="secondary-button" id="skipButton">나중에</button>
@@ -101,6 +107,18 @@
                   <dt>연속 정답</dt>
                   <dd id="detailStreak">0</dd>
                 </div>
+                <div>
+                  <dt>헷갈림</dt>
+                  <dd id="detailUnsure">0</dd>
+                </div>
+                <div>
+                  <dt>최근 시간</dt>
+                  <dd id="detailLastTime">-</dd>
+                </div>
+                <div>
+                  <dt>평균 시간</dt>
+                  <dd id="detailAvgTime">-</dd>
+                </div>
               </dl>
               <div class="recent-box">
                 <h2>최근 오답</h2>
@@ -122,6 +140,8 @@
                   <th>단어</th>
                   <th>뜻</th>
                   <th>오답</th>
+                  <th>헷갈림</th>
+                  <th>평균 시간</th>
                   <th>정답률</th>
                   <th>태그</th>
                 </tr>
@@ -141,7 +161,12 @@
             <div class="stat-panel">
               <h2>기억 필요</h2>
               <div class="big-number" id="statForgetting">0</div>
-              <p>최근 오답 또는 낮은 정답률</p>
+              <p>오답, 헷갈림, 복습 체크</p>
+            </div>
+            <div class="stat-panel">
+              <h2>평균 시간</h2>
+              <div class="big-number" id="statAvgTime">0초</div>
+              <p>문제당 풀이 시간</p>
             </div>
             <div class="stat-panel wide">
               <h2>태그별 오답</h2>

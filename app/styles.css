@@ -245,6 +245,12 @@ button {
   line-height: 1.45;
 }
 
+.sentence.paragraph {
+  max-width: 980px;
+  font-size: 22px;
+  line-height: 1.65;
+}
+
 .sentence mark {
   padding: 0 3px 3px;
   border-radius: 4px;
@@ -305,6 +311,13 @@ button {
   color: var(--muted);
 }
 
+.self-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
 .primary-button,
 .secondary-button,
 .danger-button,
@@ -328,6 +341,17 @@ button {
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
+}
+
+.secondary-button.active-check {
+  border-color: var(--amber);
+  background: var(--soft-amber);
+  color: var(--ink);
+}
+
+.secondary-button:disabled {
+  cursor: default;
+  opacity: 0.78;
 }
 
 .danger-button {

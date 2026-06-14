@@ -17,6 +17,13 @@ For the full personal dataset:
 
 Study progress stays in each browser's storage. There is no login or external database.
 
+## Study Features
+
+- Sentence and short-paragraph vocabulary questions are supported.
+- Each answer attempt stores correctness and elapsed time.
+- A correct answer can still be marked as uncertain, so guessed words stay in review.
+- Words can be manually flagged for review even when they were answered correctly.
+
 ## Data Quality Rule
 
 Do not treat raw extracted data as study material.

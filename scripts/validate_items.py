@@ -213,7 +213,7 @@ def build_learning_item(item: dict, cleaned_answer: str) -> dict:
         "choices": choices,
         "answerIndex": choices.index(cleaned_answer),
         "usage": usage,
-        "quality": "approved",
+        "quality": "lexicon-approved",
         "sentence": sentence,
         "sentenceKo": sentence_ko,
         "blankSentence": sentence.replace(term, "_____", 1),

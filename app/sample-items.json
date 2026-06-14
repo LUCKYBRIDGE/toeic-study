@@ -3,12 +3,12 @@
   "stats": {
     "generatedAt": "2026-06-14T00:00:00Z",
     "sourceFileCount": 0,
-    "itemCount": 16,
+    "itemCount": 20,
     "tagCounts": {
-      "vocabulary": 16,
-      "business": 7,
-      "schedule": 4,
-      "document": 3,
+      "vocabulary": 20,
+      "business": 10,
+      "schedule": 5,
+      "document": 4,
       "workplace": 2
     }
   },
@@ -268,6 +268,74 @@
       "grammarFocus": "noun",
       "grammarNote": "notice는 공지나 안내문을 뜻하며 about과 함께 내용을 설명할 수 있습니다.",
       "prompt": "문맥상 notice의 뜻은?"
+    },
+    {
+      "id": "sample-paragraph-temporary",
+      "term": "temporary",
+      "answer": "임시의",
+      "choices": ["임시의", "정기적인", "의무적인", "비싼"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "workplace"],
+      "source": "sample",
+      "quality": "sample",
+      "contextType": "paragraph",
+      "sentence": "The accounting office will be closed while new wiring is installed. During this period, a temporary workspace will be set up on the second floor so that employees can continue processing invoices.",
+      "sentenceKo": "회계 사무실은 새 배선이 설치되는 동안 문을 닫는다. 이 기간 동안 직원들이 청구서 처리를 계속할 수 있도록 2층에 임시 업무 공간이 마련될 것이다.",
+      "blankSentence": "During this period, a _____ workspace will be set up on the second floor.",
+      "grammarFocus": "adjective",
+      "grammarNote": "temporary는 명사 앞에서 '임시의'라는 뜻으로 쓰이며 workspace, position, arrangement와 자주 어울립니다.",
+      "prompt": "문맥상 temporary의 뜻은?"
+    },
+    {
+      "id": "sample-paragraph-screening",
+      "term": "screening",
+      "answer": "심사, 선별",
+      "choices": ["심사, 선별", "배송", "환급", "시설"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "hiring"],
+      "source": "sample",
+      "quality": "sample",
+      "contextType": "paragraph",
+      "sentence": "All applications must be submitted online by May 12. After the initial screening, selected candidates will be invited to a short interview with the branch manager.",
+      "sentenceKo": "모든 지원서는 5월 12일까지 온라인으로 제출해야 한다. 1차 심사 후 선발된 지원자들은 지점장과의 짧은 면접에 초대될 것이다.",
+      "blankSentence": "After the initial _____, selected candidates will be invited to a short interview.",
+      "grammarFocus": "noun",
+      "grammarNote": "screening은 채용이나 보안 절차에서 '심사, 선별'을 뜻하는 명사입니다.",
+      "prompt": "문맥상 screening의 뜻은?"
+    },
+    {
+      "id": "sample-paragraph-complimentary",
+      "term": "complimentary",
+      "answer": "무료의",
+      "choices": ["무료의", "불만스러운", "복잡한", "이전의"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "service"],
+      "source": "sample",
+      "quality": "sample",
+      "contextType": "paragraph",
+      "sentence": "Guests staying at the hotel for more than two nights receive a complimentary breakfast voucher. The voucher can be used at the lobby restaurant between 7 A.M. and 10 A.M.",
+      "sentenceKo": "호텔에 이틀 넘게 머무는 투숙객은 무료 아침 식사 쿠폰을 받는다. 이 쿠폰은 오전 7시부터 10시까지 로비 레스토랑에서 사용할 수 있다.",
+      "blankSentence": "Guests staying at the hotel for more than two nights receive a _____ breakfast voucher.",
+      "grammarFocus": "adjective",
+      "grammarNote": "complimentary는 서비스나 물품이 무료로 제공될 때 쓰는 형용사입니다.",
+      "prompt": "문맥상 complimentary의 뜻은?"
+    },
+    {
+      "id": "sample-paragraph-considerable",
+      "term": "considerable",
+      "answer": "상당한",
+      "choices": ["상당한", "즉각적인", "개별적인", "불필요한"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "report"],
+      "source": "sample",
+      "quality": "sample",
+      "contextType": "paragraph",
+      "sentence": "The marketing team reviewed customer responses from the new product survey. Because the campaign generated considerable interest, the company plans to increase its advertising budget next quarter.",
+      "sentenceKo": "마케팅 팀은 신제품 설문에 대한 고객 반응을 검토했다. 그 캠페인이 상당한 관심을 불러일으켰기 때문에 회사는 다음 분기에 광고 예산을 늘릴 계획이다.",
+      "blankSentence": "Because the campaign generated _____ interest, the company plans to increase its advertising budget.",
+      "grammarFocus": "adjective",
+      "grammarNote": "considerable은 amount, interest, effort처럼 양이나 정도가 큰 명사를 꾸밀 때 자주 쓰입니다.",
+      "prompt": "문맥상 considerable의 뜻은?"
     }
   ]
 }

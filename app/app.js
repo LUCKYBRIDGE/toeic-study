@@ -8,6 +8,9 @@ const state = {
   mode: "mixed",
   current: null,
   answered: false,
+  questionStartedAt: 0,
+  timerId: null,
+  lastAttemptId: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -22,6 +25,7 @@ const els = {
   questionCard: $("#questionCard"),
   questionSource: $("#questionSource"),
   questionTags: $("#questionTags"),
+  questionTimer: $("#questionTimer"),
   questionSentence: $("#questionSentence"),
   questionPrompt: $("#questionPrompt"),
   choices: $("#choices"),
@@ -34,11 +38,15 @@ const els = {
   detailSeen: $("#detailSeen"),
   detailWrong: $("#detailWrong"),
   detailStreak: $("#detailStreak"),
+  detailUnsure: $("#detailUnsure"),
+  detailLastTime: $("#detailLastTime"),
+  detailAvgTime: $("#detailAvgTime"),
   recentWrongList: $("#recentWrongList"),
   weakTable: $("#weakTable"),
   weakSearch: $("#weakSearch"),
   statAttempts: $("#statAttempts"),
   statForgetting: $("#statForgetting"),
+  statAvgTime: $("#statAvgTime"),
   tagBars: $("#tagBars"),
   datasetSummary: $("#datasetSummary"),
   progressSummary: $("#progressSummary"),
@@ -75,6 +83,10 @@ function itemStats(itemId) {
       streak: 0,
       lastSeenAt: null,
       lastWrongAt: null,
+      lastTimeMs: 0,
+      totalTimeMs: 0,
+      uncertain: 0,
+      flagged: false,
     };
   }
   return state.progress.itemStats[itemId];
@@ -102,6 +114,7 @@ function normalizeDataset(raw) {
         tags: Array.isArray(item.tags) ? item.tags.map(String) : ["general"],
         source: item.source ? String(item.source) : "unknown",
         sentence: String(item.sentence),
+        contextType: item.contextType ? String(item.contextType) : (String(item.sentence).length > 180 ? "paragraph" : "sentence"),
         blankSentence: item.blankSentence ? String(item.blankSentence) : String(item.sentence),
         sentenceKo: item.sentenceKo ? String(item.sentenceKo) : "",
         grammarFocus: item.grammarFocus ? String(item.grammarFocus) : "",
@@ -120,6 +133,19 @@ function normalizeDataset(raw) {
   };
 }
 
+function isStudyReadyDataset(dataset) {
+  const items = Array.isArray(dataset?.items) ? dataset.items : [];
+  if (!items.length) return false;
+  return items.every((item) => {
+    const quality = String(item.quality || "");
+    return (quality === "approved" || quality === "sample")
+      && Boolean(item.sentenceKo)
+      && Boolean(item.grammarNote)
+      && Array.isArray(item.choices)
+      && item.choices.includes(item.answer);
+  });
+}
+
 function buildFallbackChoices(answer) {
   const defaults = ["시행하다", "연기하다", "검토하다", "제출하다"].filter((choice) => choice !== answer);
   return [answer, ...defaults].slice(0, 4);
@@ -128,8 +154,12 @@ function buildFallbackChoices(answer) {
 async function loadInitialDataset() {
   const saved = safeParse(localStorage.getItem(DATASET_KEY), null);
   if (saved?.items?.length) {
-    state.dataset = normalizeDataset(saved);
-    return "브라우저 저장 데이터";
+    const normalized = normalizeDataset(saved);
+    if (isStudyReadyDataset(normalized)) {
+      state.dataset = normalized;
+      return "브라우저 저장 데이터";
+    }
+    localStorage.removeItem(DATASET_KEY);
   }
 
   const candidates = [
@@ -142,7 +172,7 @@ async function loadInitialDataset() {
       if (!response.ok) continue;
       const data = await response.json();
       const normalized = normalizeDataset(data);
-      if (normalized.items.length) {
+      if (isStudyReadyDataset(normalized)) {
         state.dataset = normalized;
         if (url.includes("private-data")) {
           saveDataset();
@@ -168,10 +198,12 @@ function weightedScore(item) {
   const stats = itemStats(item.id);
   const seenWeight = stats.seen === 0 ? 12 : 0;
   const wrongRate = stats.seen ? stats.wrong / stats.seen : 0;
+  const unsureBoost = (stats.uncertain || 0) * 5 + (stats.flagged ? 12 : 0);
+  const slowBoost = stats.seen && averageTimeMs(stats) > 12000 ? 4 : 0;
   const recency = stats.lastSeenAt ? Math.max(0, 8 - (Date.now() - new Date(stats.lastSeenAt).getTime()) / 86400000) : 0;
-  const modeBoost = state.mode === "weak" ? stats.wrong * 8 + wrongRate * 15 : 0;
+  const modeBoost = state.mode === "weak" ? stats.wrong * 8 + wrongRate * 15 + unsureBoost : 0;
   const newBoost = state.mode === "new" && stats.seen === 0 ? 20 : 0;
-  return seenWeight + stats.wrong * 3 + wrongRate * 10 + modeBoost + newBoost - recency + Math.random();
+  return seenWeight + stats.wrong * 3 + wrongRate * 10 + unsureBoost + slowBoost + modeBoost + newBoost - recency + Math.random();
 }
 
 function pickNextItem() {
@@ -183,13 +215,17 @@ function pickNextItem() {
   if (state.mode === "weak") {
     const weak = items.filter((item) => {
       const stats = itemStats(item.id);
-      return stats.wrong > 0 || (stats.seen >= 2 && stats.correct / stats.seen < 0.75);
+      return isWeakStats(stats);
     });
     pool = weak.length ? weak : items;
   }
   if (state.mode === "new") {
     const unseen = items.filter((item) => itemStats(item.id).seen === 0);
     pool = unseen.length ? unseen : items;
+  }
+  if (state.mode === "paragraph") {
+    const paragraphs = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
+    pool = paragraphs.length ? paragraphs : items;
   }
   return [...pool].sort((a, b) => weightedScore(b) - weightedScore(a))[0];
 }
@@ -202,9 +238,12 @@ function renderCurrent() {
   if (!item) return;
 
   state.answered = false;
+  state.lastAttemptId = null;
+  startTimer();
   els.answerPanel.classList.add("hidden");
   els.questionSource.textContent = item.source;
   els.questionTags.textContent = [item.quality, ...item.tags].filter(Boolean).join(" · ");
+  els.questionSentence.classList.toggle("paragraph", item.contextType === "paragraph" || item.sentence.length > 180);
   els.questionSentence.innerHTML = highlightTerm(item.sentence, item.term);
   els.questionPrompt.textContent = item.prompt;
   els.currentTerm.textContent = item.term;
@@ -240,19 +279,29 @@ function answerCurrent(index) {
   const item = state.current;
   const correct = index === item.answerIndex;
   const now = new Date().toISOString();
+  const elapsedMs = Math.max(0, Date.now() - state.questionStartedAt);
+  stopTimer();
   const stats = itemStats(item.id);
   stats.seen += 1;
   stats.correct += correct ? 1 : 0;
   stats.wrong += correct ? 0 : 1;
   stats.streak = correct ? stats.streak + 1 : 0;
   stats.lastSeenAt = now;
+  stats.lastTimeMs = elapsedMs;
+  stats.totalTimeMs = (stats.totalTimeMs || 0) + elapsedMs;
   if (!correct) stats.lastWrongAt = now;
+  const attemptId = `${Date.now()}-${item.id}`;
+  state.lastAttemptId = attemptId;
   state.progress.attempts.unshift({
+    id: attemptId,
     itemId: item.id,
     term: item.term,
     answer: item.answer,
     chosen: item.choices[index],
     correct,
+    uncertain: false,
+    flagged: false,
+    timeMs: elapsedMs,
     tags: item.tags,
     at: now,
   });
@@ -264,6 +313,7 @@ function answerCurrent(index) {
     if (choiceIndex === index && !correct) button.classList.add("wrong");
   });
   els.answerPanel.classList.remove("hidden");
+  updateSelfCheckButtons();
   renderAll();
 }
 
@@ -279,6 +329,9 @@ function renderCurrentStats() {
   els.detailSeen.textContent = String(stats.seen);
   els.detailWrong.textContent = String(stats.wrong);
   els.detailStreak.textContent = String(stats.streak);
+  els.detailUnsure.textContent = String(stats.uncertain || 0);
+  els.detailLastTime.textContent = stats.lastTimeMs ? formatTime(stats.lastTimeMs) : "-";
+  els.detailAvgTime.textContent = stats.seen ? formatTime(averageTimeMs(stats)) : "-";
 }
 
 function renderMetrics() {
@@ -294,8 +347,14 @@ function renderMetrics() {
 function weakItems() {
   return state.dataset.items
     .map((item) => ({ item, stats: itemStats(item.id) }))
-    .filter(({ stats }) => stats.wrong > 0 || (stats.seen >= 2 && stats.correct / stats.seen < 0.75))
-    .sort((a, b) => b.stats.wrong - a.stats.wrong || a.item.term.localeCompare(b.item.term));
+    .filter(({ stats }) => isWeakStats(stats))
+    .sort((a, b) => {
+      const aScore = b.stats.wrong - a.stats.wrong;
+      if (aScore) return aScore;
+      const unsureScore = (b.stats.uncertain || 0) - (a.stats.uncertain || 0);
+      if (unsureScore) return unsureScore;
+      return a.item.term.localeCompare(b.item.term);
+    });
 }
 
 function renderRecentWrong() {
@@ -328,7 +387,7 @@ function renderWeakTable() {
   if (!rows.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 5;
+    td.colSpan = 7;
     td.textContent = "표시할 약점 단어가 없습니다.";
     tr.appendChild(td);
     els.weakTable.appendChild(tr);
@@ -337,7 +396,15 @@ function renderWeakTable() {
   rows.forEach(({ item, stats }) => {
     const tr = document.createElement("tr");
     const accuracy = stats.seen ? stats.correct / stats.seen : 0;
-    [item.term, item.answer, String(stats.wrong), pct(accuracy), item.tags.join(", ")].forEach((text) => {
+    [
+      item.term,
+      item.answer,
+      String(stats.wrong),
+      String(stats.uncertain || 0),
+      stats.seen ? formatTime(averageTimeMs(stats)) : "-",
+      pct(accuracy),
+      item.tags.join(", "),
+    ].forEach((text) => {
       const td = document.createElement("td");
       td.textContent = text;
       tr.appendChild(td);
@@ -350,6 +417,9 @@ function renderStats() {
   const attempts = state.progress.attempts;
   els.statAttempts.textContent = String(attempts.length);
   els.statForgetting.textContent = String(weakItems().length);
+  const timed = attempts.filter((attempt) => Number.isFinite(attempt.timeMs) && attempt.timeMs > 0);
+  const avgTime = timed.length ? timed.reduce((sum, attempt) => sum + attempt.timeMs, 0) / timed.length : 0;
+  els.statAvgTime.textContent = formatTime(avgTime);
   const wrongTags = {};
   attempts.filter((attempt) => !attempt.correct).forEach((attempt) => {
     attempt.tags.forEach((tag) => {
@@ -381,6 +451,82 @@ function renderDataView() {
   const attempts = state.progress.attempts.length;
   const weak = weakItems().length;
   els.progressSummary.textContent = `${attempts}회 풀이 · 약점 ${weak}개`;
+}
+
+function isWeakStats(stats) {
+  const accuracy = stats.seen ? stats.correct / stats.seen : 1;
+  return stats.flagged
+    || (stats.uncertain || 0) > 0
+    || stats.wrong > 0
+    || (stats.seen >= 2 && accuracy < 0.75);
+}
+
+function averageTimeMs(stats) {
+  return stats.seen ? (stats.totalTimeMs || 0) / stats.seen : 0;
+}
+
+function formatTime(ms) {
+  if (!ms) return "0초";
+  if (ms < 1000) return "1초";
+  const seconds = Math.round(ms / 100) / 10;
+  return `${seconds}초`;
+}
+
+function startTimer() {
+  stopTimer();
+  state.questionStartedAt = Date.now();
+  if (els.questionTimer) {
+    els.questionTimer.textContent = "0초";
+    state.timerId = window.setInterval(() => {
+      els.questionTimer.textContent = formatTime(Date.now() - state.questionStartedAt);
+    }, 500);
+  }
+}
+
+function stopTimer() {
+  if (state.timerId) {
+    window.clearInterval(state.timerId);
+    state.timerId = null;
+  }
+  if (els.questionTimer && state.questionStartedAt) {
+    els.questionTimer.textContent = formatTime(Date.now() - state.questionStartedAt);
+  }
+}
+
+function currentAttempt() {
+  return state.progress.attempts.find((attempt) => attempt.id === state.lastAttemptId) || null;
+}
+
+function markCurrent(kind) {
+  if (!state.current || !state.answered) return;
+  const stats = itemStats(state.current.id);
+  const attempt = currentAttempt();
+  if (kind === "unsure" && attempt && !attempt.uncertain) {
+    attempt.uncertain = true;
+    attempt.flagged = true;
+    stats.uncertain = (stats.uncertain || 0) + 1;
+    stats.flagged = true;
+  }
+  if (kind === "flag") {
+    stats.flagged = !stats.flagged;
+    if (attempt) attempt.flagged = stats.flagged;
+  }
+  saveProgress();
+  updateSelfCheckButtons();
+  renderAll();
+}
+
+function updateSelfCheckButtons() {
+  const unsureButton = $("#unsureButton");
+  const flagButton = $("#flagButton");
+  if (!state.current || !unsureButton || !flagButton) return;
+  const stats = itemStats(state.current.id);
+  const attempt = currentAttempt();
+  unsureButton.disabled = !state.answered || Boolean(attempt?.uncertain);
+  unsureButton.classList.toggle("active-check", Boolean(attempt?.uncertain));
+  unsureButton.textContent = attempt?.uncertain ? "헷갈림 저장됨" : "맞혔지만 헷갈림";
+  flagButton.classList.toggle("active-check", Boolean(stats.flagged));
+  flagButton.textContent = stats.flagged ? "복습 체크됨" : "복습 체크";
 }
 
 function renderAll() {
@@ -454,6 +600,8 @@ function bindEvents() {
   $("#shuffleButton").addEventListener("click", nextQuestion);
   $("#skipButton").addEventListener("click", nextQuestion);
   $("#nextButton").addEventListener("click", nextQuestion);
+  $("#unsureButton").addEventListener("click", () => markCurrent("unsure"));
+  $("#flagButton").addEventListener("click", () => markCurrent("flag"));
   els.weakSearch.addEventListener("input", renderWeakTable);
   $("#exportDatasetButton").addEventListener("click", () => downloadJson("toeic-study-items.json", state.dataset));
   $("#exportProgressButton").addEventListener("click", () => downloadJson("toeic-study-progress.json", state.progress));
@@ -463,7 +611,13 @@ function bindEvents() {
     const file = event.target.files?.[0];
     if (!file) return;
     const raw = await readJsonFile(file);
-    state.dataset = normalizeDataset(raw);
+    const normalized = normalizeDataset(raw);
+    if (!isStudyReadyDataset(normalized)) {
+      alert("이 파일은 완성 학습 데이터가 아닙니다. sentenceKo, grammarNote, quality=approved가 있는 검증 데이터만 가져옵니다.");
+      event.target.value = "";
+      return;
+    }
+    state.dataset = normalized;
     saveDataset();
     nextQuestion();
     renderAll();
