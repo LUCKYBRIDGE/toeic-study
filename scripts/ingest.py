@@ -41,13 +41,39 @@ NOISE_ENGLISH = {
 }
 
 COMMON_CONTEXTS = [
-    "The company will {term} the new policy next month.",
-    "Employees should {term} the document before the meeting.",
-    "The manager asked the team to review the {term} carefully.",
+    "The manager reviewed the {term} before the meeting.",
     "Customers can check the {term} on the company Web site.",
     "The department sent a notice about the {term} yesterday.",
     "Applicants must submit the {term} by Friday.",
 ]
+
+NOUN_SUFFIXES = (
+    "tion",
+    "sion",
+    "ment",
+    "ness",
+    "ity",
+    "ance",
+    "ence",
+    "er",
+    "or",
+    "ee",
+    "ist",
+    "ship",
+    "age",
+)
+
+ADJECTIVE_SUFFIXES = (
+    "able",
+    "ible",
+    "al",
+    "ful",
+    "ive",
+    "less",
+    "ous",
+    "ic",
+    "ary",
+)
 
 CATEGORY_RULES = [
     ("schedule", ("deadline", "delay", "postpone", "reschedule", "advance", "expire", "reservation", "period")),
@@ -187,7 +213,45 @@ def classify(term: str, meaning: str, source: str) -> list[str]:
     return sorted(tags)
 
 
-def fallback_sentence(term: str, tags: list[str]) -> str:
+def infer_usage(term: str, meaning: str) -> str:
+    lower = term.lower()
+    if " " in lower:
+        if lower.startswith(("in ", "at ", "on ", "by ", "for ", "to ", "with ", "without ", "due to", "owing to")):
+            return "adverbial-phrase"
+        if lower.startswith(("be ", "become ", "remain ")):
+            return "verb-phrase"
+        return "noun-phrase"
+    if meaning.endswith("하다") or meaning.endswith("되다") or "하다" in meaning:
+        return "verb"
+    if meaning.endswith(("한", "있는", "없는", "적인", "된")):
+        return "adjective"
+    if lower.endswith(NOUN_SUFFIXES) or meaning.endswith(("자", "사", "장", "료", "비", "서", "표", "일", "금", "품", "률")):
+        return "noun"
+    if lower.endswith("ly") or meaning.endswith("게") or meaning.endswith("히"):
+        return "adverb"
+    if lower.endswith(ADJECTIVE_SUFFIXES):
+        return "adjective"
+    return "noun"
+
+
+def fallback_sentence(term: str, meaning: str, tags: list[str]) -> str:
+    usage = infer_usage(term, meaning)
+    if usage == "verb":
+        if "document" in tags:
+            return f"The supervisor asked employees to {term} the document before Friday."
+        if "schedule" in tags:
+            return f"The team will {term} the meeting after confirming everyone's availability."
+        return f"The company plans to {term} the new policy next month."
+    if usage == "adjective":
+        return f"The report includes {term} information about the company's new services."
+    if usage == "adverb":
+        return f"The manager {term} explained the changes during the staff meeting."
+    if usage == "adverbial-phrase":
+        return f"Employees must register {term} to attend the training session."
+    if usage == "verb-phrase":
+        return f"Employees should {term} when assisting customers with account issues."
+    if usage == "noun-phrase":
+        return f"The manager discussed the {term} during the planning meeting."
     if "schedule" in tags:
         return f"The team discussed the {term} during the planning meeting."
     if "document" in tags:
@@ -279,7 +343,8 @@ def main() -> int:
 
     items = []
     for item in pair_map.values():
-        context = find_context(item["term"], all_sentences) or fallback_sentence(item["term"], item["tags"])
+        item["usage"] = infer_usage(item["term"], item["answer"])
+        context = find_context(item["term"], all_sentences) or fallback_sentence(item["term"], item["answer"], item["tags"])
         item["sentence"] = context
         item["blankSentence"] = re.sub(
             rf"\b{re.escape(item['term'])}\b",

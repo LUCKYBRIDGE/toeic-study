@@ -9,11 +9,21 @@ The GitHub Pages build publishes only `app/`, so it is playable with the bundled
 For the full personal dataset:
 
 1. On the machine with source materials, run `npm run ingest`.
-2. Open the app locally and export the loaded study data, or use `private-data/generated/study-items.json`.
-3. On another device, open the published app and use `study-items.json 가져오기`.
-4. Export/import progress JSON when moving study records between browsers.
+2. Review `private-data/generated/quality-report.md`.
+3. Use `private-data/generated/study-items.approved.json` only after items have full sentence, translation, and grammar approval.
+4. Use `private-data/generated/study-items.lexicon-approved.json` only as a word-meaning review source, not as final sentence/grammar study data.
+5. On another device, open the published app and use `study-items.json 가져오기` for a reviewed dataset.
+6. Export/import progress JSON when moving study records between browsers.
 
 Study progress stays in each browser's storage. There is no login or external database.
+
+## Data Quality Rule
+
+Do not treat raw extracted data as study material.
+
+- `study-items.json`: raw extraction candidates.
+- `study-items.lexicon-approved.json`: word and Korean-meaning candidates that passed automatic cleanup.
+- `study-items.approved.json`: final study data only. Items belong here only after the English sentence, Korean sentence translation, and grammar note are also checked.
 
 ## Structure
 

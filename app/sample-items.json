@@ -21,8 +21,12 @@
       "answerIndex": 1,
       "tags": ["vocabulary", "business", "action-verb"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The company will implement the new policy next month.",
+      "sentenceKo": "그 회사는 다음 달 새 정책을 시행할 예정이다.",
       "blankSentence": "The company will _____ the new policy next month.",
+      "grammarFocus": "verb",
+      "grammarNote": "동사 implement는 목적어 policy, plan, change와 함께 자주 쓰입니다.",
       "prompt": "문맥상 implement의 뜻은?"
     },
     {
@@ -33,8 +37,12 @@
       "answerIndex": 1,
       "tags": ["vocabulary", "schedule"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The seminar was postponed because the presenter was unavailable.",
+      "sentenceKo": "발표자가 참석할 수 없어 세미나가 연기되었다.",
       "blankSentence": "The seminar was _____ because the presenter was unavailable.",
+      "grammarFocus": "verb",
+      "grammarNote": "postpone은 일정이나 행사를 뒤로 미룰 때 쓰는 동사입니다.",
       "prompt": "문맥상 postponed의 뜻은?"
     },
     {
@@ -45,8 +53,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "document"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "Applicants must submit the completed form by Friday.",
+      "sentenceKo": "지원자들은 금요일까지 완성된 양식을 제출해야 한다.",
       "blankSentence": "Applicants must _____ the completed form by Friday.",
+      "grammarFocus": "verb",
+      "grammarNote": "submit은 form, report, application 같은 문서 목적어와 자주 쓰입니다.",
       "prompt": "문맥상 submit의 뜻은?"
     },
     {
@@ -57,8 +69,12 @@
       "answerIndex": 1,
       "tags": ["vocabulary", "business", "document"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The company decided to renew its contract with the supplier.",
+      "sentenceKo": "그 회사는 공급업체와의 계약을 갱신하기로 했다.",
       "blankSentence": "The company decided to _____ its contract with the supplier.",
+      "grammarFocus": "verb",
+      "grammarNote": "renew는 contract, membership, license처럼 기간이 있는 것을 갱신할 때 씁니다.",
       "prompt": "문맥상 renew의 뜻은?"
     },
     {
@@ -69,8 +85,12 @@
       "answerIndex": 1,
       "tags": ["vocabulary", "schedule"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The deadline for the quarterly report has been moved to Monday.",
+      "sentenceKo": "분기 보고서 마감일이 월요일로 옮겨졌다.",
       "blankSentence": "The _____ for the quarterly report has been moved to Monday.",
+      "grammarFocus": "noun",
+      "grammarNote": "deadline은 전치사 for와 함께 '~의 마감일'이라는 뜻으로 자주 쓰입니다.",
       "prompt": "문맥상 deadline의 뜻은?"
     },
     {
@@ -81,8 +101,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "business"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "Employees are eligible for a travel allowance after six months.",
+      "sentenceKo": "직원들은 6개월 후 출장 수당을 받을 자격이 있다.",
       "blankSentence": "Employees are _____ for a travel allowance after six months.",
+      "grammarFocus": "adjective",
+      "grammarNote": "eligible은 be eligible for 형태로 '~을 받을 자격이 있다'라는 뜻을 만듭니다.",
       "prompt": "문맥상 eligible의 뜻은?"
     },
     {
@@ -93,8 +117,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "document"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "Please read the attached file before attending the training session.",
+      "sentenceKo": "교육에 참석하기 전에 첨부된 파일을 읽어 주세요.",
       "blankSentence": "Please read the _____ file before attending the training session.",
+      "grammarFocus": "adjective",
+      "grammarNote": "attached는 명사 앞에서 '첨부된'이라는 뜻의 형용사처럼 쓰입니다.",
       "prompt": "문맥상 attached의 뜻은?"
     },
     {
@@ -105,8 +133,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "workplace"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The new facility includes a conference room and a storage area.",
+      "sentenceKo": "새 시설에는 회의실과 보관 공간이 포함되어 있다.",
       "blankSentence": "The new _____ includes a conference room and a storage area.",
+      "grammarFocus": "noun",
+      "grammarNote": "facility는 건물, 설비, 시설을 뜻하는 명사입니다.",
       "prompt": "문맥상 facility의 뜻은?"
     },
     {
@@ -117,8 +149,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "business"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "Customers should confirm their reservation at least one day in advance.",
+      "sentenceKo": "고객은 최소 하루 전에 예약을 확인해야 한다.",
       "blankSentence": "Customers should _____ their reservation at least one day in advance.",
+      "grammarFocus": "verb",
+      "grammarNote": "confirm은 reservation, appointment, order 같은 것을 확인할 때 씁니다.",
       "prompt": "문맥상 confirm의 뜻은?"
     },
     {
@@ -129,8 +165,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "business", "document"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The accounting department sent an invoice to the client.",
+      "sentenceKo": "회계 부서가 고객에게 청구서를 보냈다.",
       "blankSentence": "The accounting department sent an _____ to the client.",
+      "grammarFocus": "noun",
+      "grammarNote": "invoice는 거래 후 금액을 청구하는 문서를 뜻하는 명사입니다.",
       "prompt": "문맥상 invoice의 뜻은?"
     },
     {
@@ -141,8 +181,12 @@
       "answerIndex": 1,
       "tags": ["vocabulary", "schedule"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The team had to reschedule the meeting because of a client visit.",
+      "sentenceKo": "그 팀은 고객 방문 때문에 회의 일정을 다시 잡아야 했다.",
       "blankSentence": "The team had to _____ the meeting because of a client visit.",
+      "grammarFocus": "verb",
+      "grammarNote": "reschedule은 meeting, appointment 같은 일정을 다시 잡을 때 씁니다.",
       "prompt": "문맥상 reschedule의 뜻은?"
     },
     {
@@ -153,8 +197,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "business"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The company will reimburse employees for approved travel expenses.",
+      "sentenceKo": "회사는 승인된 출장 경비를 직원들에게 환급할 것이다.",
       "blankSentence": "The company will _____ employees for approved travel expenses.",
+      "grammarFocus": "verb",
+      "grammarNote": "reimburse A for B는 'A에게 B를 환급하다'라는 구조입니다.",
       "prompt": "문맥상 reimburse의 뜻은?"
     },
     {
@@ -165,8 +213,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "workplace"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "All returned products are stored in the warehouse for inspection.",
+      "sentenceKo": "반품된 모든 제품은 검사를 위해 창고에 보관된다.",
       "blankSentence": "All returned products are stored in the _____ for inspection.",
+      "grammarFocus": "noun",
+      "grammarNote": "warehouse는 물품을 보관하는 창고를 뜻하는 명사입니다.",
       "prompt": "문맥상 warehouse의 뜻은?"
     },
     {
@@ -177,8 +229,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "schedule"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "Conference participants must register in advance to receive a discount.",
+      "sentenceKo": "회의 참가자들은 할인을 받으려면 사전에 등록해야 한다.",
       "blankSentence": "Conference participants must register _____ to receive a discount.",
+      "grammarFocus": "phrase",
+      "grammarNote": "in advance는 동사 register를 꾸며 '미리, 사전에'라는 시간을 나타냅니다.",
       "prompt": "문맥상 in advance의 뜻은?"
     },
     {
@@ -189,8 +245,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "business"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "The renovation will take approximately three weeks to complete.",
+      "sentenceKo": "그 보수 공사는 완료까지 대략 3주가 걸릴 것이다.",
       "blankSentence": "The renovation will take _____ three weeks to complete.",
+      "grammarFocus": "adverb",
+      "grammarNote": "approximately는 수량이나 기간 앞에서 '대략'이라는 뜻을 더합니다.",
       "prompt": "문맥상 approximately의 뜻은?"
     },
     {
@@ -201,8 +261,12 @@
       "answerIndex": 0,
       "tags": ["vocabulary", "document"],
       "source": "sample",
+      "quality": "sample",
       "sentence": "A notice about the maintenance work was posted near the elevator.",
+      "sentenceKo": "유지 보수 작업에 관한 공지가 엘리베이터 근처에 붙었다.",
       "blankSentence": "A _____ about the maintenance work was posted near the elevator.",
+      "grammarFocus": "noun",
+      "grammarNote": "notice는 공지나 안내문을 뜻하며 about과 함께 내용을 설명할 수 있습니다.",
       "prompt": "문맥상 notice의 뜻은?"
     }
   ]

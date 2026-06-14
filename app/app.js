@@ -28,6 +28,8 @@ const els = {
   answerPanel: $("#answerPanel"),
   answerText: $("#answerText"),
   blankSentence: $("#blankSentence"),
+  sentenceKo: $("#sentenceKo"),
+  grammarNote: $("#grammarNote"),
   currentTerm: $("#currentTerm"),
   detailSeen: $("#detailSeen"),
   detailWrong: $("#detailWrong"),
@@ -101,6 +103,10 @@ function normalizeDataset(raw) {
         source: item.source ? String(item.source) : "unknown",
         sentence: String(item.sentence),
         blankSentence: item.blankSentence ? String(item.blankSentence) : String(item.sentence),
+        sentenceKo: item.sentenceKo ? String(item.sentenceKo) : "",
+        grammarFocus: item.grammarFocus ? String(item.grammarFocus) : "",
+        grammarNote: item.grammarNote ? String(item.grammarNote) : "",
+        quality: item.quality ? String(item.quality) : "unverified",
         prompt: item.prompt ? String(item.prompt) : `문맥상 ${item.term}의 뜻은?`,
       };
     });
@@ -126,7 +132,10 @@ async function loadInitialDataset() {
     return "브라우저 저장 데이터";
   }
 
-  const candidates = ["../private-data/generated/study-items.json", "./sample-items.json"];
+  const candidates = [
+    "../private-data/generated/study-items.approved.json",
+    "./sample-items.json",
+  ];
   for (const url of candidates) {
     try {
       const response = await fetch(url, { cache: "no-store" });
@@ -195,12 +204,14 @@ function renderCurrent() {
   state.answered = false;
   els.answerPanel.classList.add("hidden");
   els.questionSource.textContent = item.source;
-  els.questionTags.textContent = item.tags.join(" · ");
+  els.questionTags.textContent = [item.quality, ...item.tags].filter(Boolean).join(" · ");
   els.questionSentence.innerHTML = highlightTerm(item.sentence, item.term);
   els.questionPrompt.textContent = item.prompt;
   els.currentTerm.textContent = item.term;
   els.answerText.textContent = item.answer;
   els.blankSentence.textContent = item.blankSentence;
+  els.sentenceKo.textContent = item.sentenceKo || "문장 해석 데이터 없음";
+  els.grammarNote.textContent = item.grammarNote || "문법 포인트 데이터 없음";
 
   els.choices.innerHTML = "";
   item.choices.forEach((choice, index) => {
