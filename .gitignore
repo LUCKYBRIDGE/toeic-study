@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+
+# User-owned TOEIC source material and generated extracts.
+materials/
+private-data/
+
+# Local runtime clutter.
+.env
+.env.*
+npm-debug.log*

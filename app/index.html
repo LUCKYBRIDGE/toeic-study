@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TOEIC Context Vocab</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">T</div>
+          <div>
+            <h1>TOEIC Context Vocab</h1>
+            <p id="dataStatus">자료 확인 중</p>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" aria-label="보기">
+          <button class="tab-button active" data-view="practice">풀이</button>
+          <button class="tab-button" data-view="weak">약점</button>
+          <button class="tab-button" data-view="stats">분석</button>
+          <button class="tab-button" data-view="data">자료</button>
+        </nav>
+
+        <div class="metric-stack">
+          <div class="metric">
+            <span>학습 항목</span>
+            <strong id="metricItems">0</strong>
+          </div>
+          <div class="metric">
+            <span>정답률</span>
+            <strong id="metricAccuracy">0%</strong>
+          </div>
+          <div class="metric">
+            <span>약점 단어</span>
+            <strong id="metricWeak">0</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="view active" id="view-practice">
+          <div class="practice-layout">
+            <section class="practice-panel" aria-live="polite">
+              <div class="toolbar">
+                <div class="segmented" role="tablist" aria-label="출제 모드">
+                  <button class="mode-button active" data-mode="mixed">오늘</button>
+                  <button class="mode-button" data-mode="weak">약점</button>
+                  <button class="mode-button" data-mode="new">새 단어</button>
+                  <button class="mode-button" data-mode="all">전체</button>
+                </div>
+                <button class="icon-button" id="shuffleButton" title="다른 문제">↻</button>
+              </div>
+
+              <div id="emptyState" class="empty-state hidden">
+                <strong>학습 데이터가 없습니다.</strong>
+                <span>자료 탭에서 `study-items.json`을 가져오세요.</span>
+              </div>
+
+              <article id="questionCard" class="question-card">
+                <div class="question-meta">
+                  <span id="questionSource">source</span>
+                  <span id="questionTags">tag</span>
+                </div>
+                <p class="sentence" id="questionSentence"></p>
+                <p class="prompt" id="questionPrompt"></p>
+                <div class="choices" id="choices"></div>
+                <div class="answer-panel hidden" id="answerPanel">
+                  <div>
+                    <span class="answer-label">정답</span>
+                    <strong id="answerText"></strong>
+                  </div>
+                  <p id="blankSentence"></p>
+                </div>
+                <div class="question-actions">
+                  <button class="secondary-button" id="skipButton">나중에</button>
+                  <button class="primary-button" id="nextButton">다음</button>
+                </div>
+              </article>
+            </section>
+
+            <aside class="study-panel">
+              <div class="panel-header">
+                <h2>현재 단어</h2>
+                <span id="currentTerm">-</span>
+              </div>
+              <dl class="detail-list">
+                <div>
+                  <dt>시도</dt>
+                  <dd id="detailSeen">0</dd>
+                </div>
+                <div>
+                  <dt>오답</dt>
+                  <dd id="detailWrong">0</dd>
+                </div>
+                <div>
+                  <dt>연속 정답</dt>
+                  <dd id="detailStreak">0</dd>
+                </div>
+              </dl>
+              <div class="recent-box">
+                <h2>최근 오답</h2>
+                <ul id="recentWrongList"></ul>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-weak">
+          <div class="section-header">
+            <h2>약점 단어</h2>
+            <input id="weakSearch" type="search" placeholder="검색" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>단어</th>
+                  <th>뜻</th>
+                  <th>오답</th>
+                  <th>정답률</th>
+                  <th>태그</th>
+                </tr>
+              </thead>
+              <tbody id="weakTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view" id="view-stats">
+          <div class="stats-grid">
+            <div class="stat-panel">
+              <h2>학습 요약</h2>
+              <div class="big-number" id="statAttempts">0</div>
+              <p>누적 풀이</p>
+            </div>
+            <div class="stat-panel">
+              <h2>기억 필요</h2>
+              <div class="big-number" id="statForgetting">0</div>
+              <p>최근 오답 또는 낮은 정답률</p>
+            </div>
+            <div class="stat-panel wide">
+              <h2>태그별 오답</h2>
+              <div id="tagBars" class="tag-bars"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-data">
+          <div class="data-grid">
+            <div class="data-panel">
+              <h2>학습 데이터</h2>
+              <p id="datasetSummary">불러온 데이터 없음</p>
+              <label class="file-button">
+                study-items.json 가져오기
+                <input id="datasetInput" type="file" accept="application/json,.json" />
+              </label>
+              <button class="secondary-button" id="exportDatasetButton">현재 데이터 내보내기</button>
+            </div>
+            <div class="data-panel">
+              <h2>학습 기록</h2>
+              <p id="progressSummary">기록 없음</p>
+              <div class="button-row">
+                <button class="secondary-button" id="exportProgressButton">기록 내보내기</button>
+                <label class="file-button compact">
+                  기록 가져오기
+                  <input id="progressInput" type="file" accept="application/json,.json" />
+                </label>
+              </div>
+              <button class="danger-button" id="resetProgressButton">기록 초기화</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

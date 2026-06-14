@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "stats": {
+    "generatedAt": "2026-06-14T00:00:00Z",
+    "sourceFileCount": 0,
+    "itemCount": 16,
+    "tagCounts": {
+      "vocabulary": 16,
+      "business": 7,
+      "schedule": 4,
+      "document": 3,
+      "workplace": 2
+    }
+  },
+  "items": [
+    {
+      "id": "sample-implement",
+      "term": "implement",
+      "answer": "시행하다",
+      "choices": ["연기하다", "시행하다", "검토하다", "폐지하다"],
+      "answerIndex": 1,
+      "tags": ["vocabulary", "business", "action-verb"],
+      "source": "sample",
+      "sentence": "The company will implement the new policy next month.",
+      "blankSentence": "The company will _____ the new policy next month.",
+      "prompt": "문맥상 implement의 뜻은?"
+    },
+    {
+      "id": "sample-postpone",
+      "term": "postpone",
+      "answer": "연기하다",
+      "choices": ["확정하다", "연기하다", "시행하다", "첨부하다"],
+      "answerIndex": 1,
+      "tags": ["vocabulary", "schedule"],
+      "source": "sample",
+      "sentence": "The seminar was postponed because the presenter was unavailable.",
+      "blankSentence": "The seminar was _____ because the presenter was unavailable.",
+      "prompt": "문맥상 postponed의 뜻은?"
+    },
+    {
+      "id": "sample-submit",
+      "term": "submit",
+      "answer": "제출하다",
+      "choices": ["제출하다", "구매하다", "수정하다", "고용하다"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "document"],
+      "source": "sample",
+      "sentence": "Applicants must submit the completed form by Friday.",
+      "blankSentence": "Applicants must _____ the completed form by Friday.",
+      "prompt": "문맥상 submit의 뜻은?"
+    },
+    {
+      "id": "sample-renew",
+      "term": "renew",
+      "answer": "갱신하다",
+      "choices": ["축소하다", "갱신하다", "조사하다", "초대하다"],
+      "answerIndex": 1,
+      "tags": ["vocabulary", "business", "document"],
+      "source": "sample",
+      "sentence": "The company decided to renew its contract with the supplier.",
+      "blankSentence": "The company decided to _____ its contract with the supplier.",
+      "prompt": "문맥상 renew의 뜻은?"
+    },
+    {
+      "id": "sample-deadline",
+      "term": "deadline",
+      "answer": "마감일",
+      "choices": ["회의실", "마감일", "출장비", "안전 장비"],
+      "answerIndex": 1,
+      "tags": ["vocabulary", "schedule"],
+      "source": "sample",
+      "sentence": "The deadline for the quarterly report has been moved to Monday.",
+      "blankSentence": "The _____ for the quarterly report has been moved to Monday.",
+      "prompt": "문맥상 deadline의 뜻은?"
+    },
+    {
+      "id": "sample-eligible",
+      "term": "eligible",
+      "answer": "자격이 있는",
+      "choices": ["자격이 있는", "임시의", "비싼", "복잡한"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business"],
+      "source": "sample",
+      "sentence": "Employees are eligible for a travel allowance after six months.",
+      "blankSentence": "Employees are _____ for a travel allowance after six months.",
+      "prompt": "문맥상 eligible의 뜻은?"
+    },
+    {
+      "id": "sample-attach",
+      "term": "attached",
+      "answer": "첨부된",
+      "choices": ["첨부된", "취소된", "비어 있는", "확정된"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "document"],
+      "source": "sample",
+      "sentence": "Please read the attached file before attending the training session.",
+      "blankSentence": "Please read the _____ file before attending the training session.",
+      "prompt": "문맥상 attached의 뜻은?"
+    },
+    {
+      "id": "sample-facility",
+      "term": "facility",
+      "answer": "시설",
+      "choices": ["시설", "요금", "설문", "수익"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "workplace"],
+      "source": "sample",
+      "sentence": "The new facility includes a conference room and a storage area.",
+      "blankSentence": "The new _____ includes a conference room and a storage area.",
+      "prompt": "문맥상 facility의 뜻은?"
+    },
+    {
+      "id": "sample-confirm",
+      "term": "confirm",
+      "answer": "확인하다",
+      "choices": ["확인하다", "제작하다", "배달하다", "인상하다"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business"],
+      "source": "sample",
+      "sentence": "Customers should confirm their reservation at least one day in advance.",
+      "blankSentence": "Customers should _____ their reservation at least one day in advance.",
+      "prompt": "문맥상 confirm의 뜻은?"
+    },
+    {
+      "id": "sample-invoice",
+      "term": "invoice",
+      "answer": "송장, 청구서",
+      "choices": ["송장, 청구서", "지원자", "출입증", "보증서"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "document"],
+      "source": "sample",
+      "sentence": "The accounting department sent an invoice to the client.",
+      "blankSentence": "The accounting department sent an _____ to the client.",
+      "prompt": "문맥상 invoice의 뜻은?"
+    },
+    {
+      "id": "sample-reschedule",
+      "term": "reschedule",
+      "answer": "일정을 다시 잡다",
+      "choices": ["할인하다", "일정을 다시 잡다", "보관하다", "채용하다"],
+      "answerIndex": 1,
+      "tags": ["vocabulary", "schedule"],
+      "source": "sample",
+      "sentence": "The team had to reschedule the meeting because of a client visit.",
+      "blankSentence": "The team had to _____ the meeting because of a client visit.",
+      "prompt": "문맥상 reschedule의 뜻은?"
+    },
+    {
+      "id": "sample-reimburse",
+      "term": "reimburse",
+      "answer": "변제하다, 환급하다",
+      "choices": ["변제하다, 환급하다", "홍보하다", "고장 내다", "확장하다"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business"],
+      "source": "sample",
+      "sentence": "The company will reimburse employees for approved travel expenses.",
+      "blankSentence": "The company will _____ employees for approved travel expenses.",
+      "prompt": "문맥상 reimburse의 뜻은?"
+    },
+    {
+      "id": "sample-warehouse",
+      "term": "warehouse",
+      "answer": "창고",
+      "choices": ["창고", "설문", "지점", "신청서"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "workplace"],
+      "source": "sample",
+      "sentence": "All returned products are stored in the warehouse for inspection.",
+      "blankSentence": "All returned products are stored in the _____ for inspection.",
+      "prompt": "문맥상 warehouse의 뜻은?"
+    },
+    {
+      "id": "sample-advance",
+      "term": "in advance",
+      "answer": "사전에",
+      "choices": ["사전에", "갑자기", "정기적으로", "대신에"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "schedule"],
+      "source": "sample",
+      "sentence": "Conference participants must register in advance to receive a discount.",
+      "blankSentence": "Conference participants must register _____ to receive a discount.",
+      "prompt": "문맥상 in advance의 뜻은?"
+    },
+    {
+      "id": "sample-approximately",
+      "term": "approximately",
+      "answer": "대략",
+      "choices": ["대략", "즉시", "드물게", "별도로"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business"],
+      "source": "sample",
+      "sentence": "The renovation will take approximately three weeks to complete.",
+      "blankSentence": "The renovation will take _____ three weeks to complete.",
+      "prompt": "문맥상 approximately의 뜻은?"
+    },
+    {
+      "id": "sample-notice",
+      "term": "notice",
+      "answer": "공지",
+      "choices": ["공지", "영수증", "계약자", "창고"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "document"],
+      "source": "sample",
+      "sentence": "A notice about the maintenance work was posted near the elevator.",
+      "blankSentence": "A _____ about the maintenance work was posted near the elevator.",
+      "prompt": "문맥상 notice의 뜻은?"
+    }
+  ]
+}
