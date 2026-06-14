@@ -56,9 +56,13 @@ button {
 
 .brand {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 44px minmax(0, 1fr) 40px;
   gap: 12px;
   align-items: center;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 .brand-mark {
@@ -210,12 +214,23 @@ button {
 .icon-button {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
   border-radius: 8px;
   background: var(--soft-blue);
   color: var(--blue);
   font-size: 18px;
+}
+
+.icon-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.fullscreen-button[aria-pressed="true"] {
+  background: var(--ink);
+  color: white;
 }
 
 .question-card {
@@ -668,11 +683,16 @@ th {
   }
 
   .brand {
-    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
     gap: 10px;
   }
 
   .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .fullscreen-button {
     width: 38px;
     height: 38px;
   }

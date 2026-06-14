@@ -52,6 +52,8 @@ const els = {
   progressSummary: $("#progressSummary"),
   datasetInput: $("#datasetInput"),
   progressInput: $("#progressInput"),
+  fullscreenButton: $("#fullscreenButton"),
+  fullscreenIcon: $("#fullscreenIcon"),
 };
 
 function safeParse(value, fallback) {
@@ -640,6 +642,61 @@ function resetProgress() {
   renderCurrent();
 }
 
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+function fullscreenSupported() {
+  const root = document.documentElement;
+  const standardAllowed = document.fullscreenEnabled !== false && typeof root.requestFullscreen === "function";
+  const webkitAllowed = document.webkitFullscreenEnabled !== false && typeof root.webkitRequestFullscreen === "function";
+  return standardAllowed || webkitAllowed;
+}
+
+async function enterFullscreen() {
+  const root = document.documentElement;
+  const request = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (!request) return;
+  await request.call(root);
+}
+
+async function exitFullscreen() {
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!exit) return;
+  await exit.call(document);
+}
+
+function updateFullscreenButton() {
+  if (!els.fullscreenButton || !els.fullscreenIcon) return;
+  const supported = fullscreenSupported();
+  const active = Boolean(fullscreenElement());
+  els.fullscreenButton.disabled = !supported;
+  els.fullscreenButton.setAttribute("aria-pressed", active ? "true" : "false");
+  els.fullscreenButton.setAttribute("aria-label", active ? "전체화면 해제" : "전체화면");
+  els.fullscreenButton.title = supported
+    ? (active ? "전체화면 해제" : "전체화면")
+    : "이 브라우저는 전체화면을 지원하지 않습니다.";
+  els.fullscreenIcon.textContent = active ? "×" : "⛶";
+}
+
+async function toggleFullscreen() {
+  if (!fullscreenSupported()) {
+    updateFullscreenButton();
+    return;
+  }
+  try {
+    if (fullscreenElement()) {
+      await exitFullscreen();
+    } else {
+      await enterFullscreen();
+    }
+  } catch {
+    // Browsers can reject fullscreen outside trusted user gestures.
+  } finally {
+    updateFullscreenButton();
+  }
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -679,6 +736,10 @@ function bindEvents() {
   $("#nextButton").addEventListener("click", nextQuestion);
   $("#unsureButton").addEventListener("click", () => markCurrent("unsure"));
   $("#flagButton").addEventListener("click", () => markCurrent("flag"));
+  els.fullscreenButton?.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", updateFullscreenButton);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+  updateFullscreenButton();
   els.weakSearch.addEventListener("input", renderWeakTable);
   $("#exportDatasetButton").addEventListener("click", () => downloadJson("toeic-study-items.json", state.dataset));
   $("#exportProgressButton").addEventListener("click", () => downloadJson("toeic-study-progress.json", state.progress));
