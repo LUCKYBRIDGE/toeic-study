@@ -24,6 +24,13 @@ Study progress stays in each browser's storage. There is no login or external da
 - A correct answer can still be marked as uncertain, so guessed words stay in review.
 - Words can be manually flagged for review even when they were answered correctly.
 
+## Item Model
+
+- `id`: unique question id. Every target word in every context gets its own item.
+- `termKey`: normalized word key. Repeated appearances of the same word across different contexts are analyzed together.
+- `contextId`: shared sentence or paragraph id. Multiple target words can point to the same context.
+- This means duplicate-looking words are allowed when the context is different, and duplicate-looking contexts are allowed when the target word is different.
+
 ## Data Quality Rule
 
 Do not treat raw extracted data as study material.

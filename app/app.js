@@ -108,6 +108,8 @@ function normalizeDataset(raw) {
       return {
         id: String(item.id),
         term: String(item.term),
+        termKey: item.termKey ? String(item.termKey) : normalizeTermKey(item.term),
+        contextId: item.contextId ? String(item.contextId) : `ctx-${stableHash(item.sentence)}`,
         answer: String(item.answer),
         choices: choices.map(String),
         answerIndex,
@@ -196,12 +198,13 @@ function loadProgress() {
 
 function weightedScore(item) {
   const stats = itemStats(item.id);
+  const aggregate = termStats(item.termKey);
   const seenWeight = stats.seen === 0 ? 12 : 0;
   const wrongRate = stats.seen ? stats.wrong / stats.seen : 0;
-  const unsureBoost = (stats.uncertain || 0) * 5 + (stats.flagged ? 12 : 0);
+  const unsureBoost = (stats.uncertain || 0) * 5 + (stats.flagged ? 12 : 0) + (aggregate.uncertain || 0) * 2;
   const slowBoost = stats.seen && averageTimeMs(stats) > 12000 ? 4 : 0;
   const recency = stats.lastSeenAt ? Math.max(0, 8 - (Date.now() - new Date(stats.lastSeenAt).getTime()) / 86400000) : 0;
-  const modeBoost = state.mode === "weak" ? stats.wrong * 8 + wrongRate * 15 + unsureBoost : 0;
+  const modeBoost = state.mode === "weak" ? (stats.wrong + aggregate.wrong) * 8 + wrongRate * 15 + unsureBoost : 0;
   const newBoost = state.mode === "new" && stats.seen === 0 ? 20 : 0;
   return seenWeight + stats.wrong * 3 + wrongRate * 10 + unsureBoost + slowBoost + modeBoost + newBoost - recency + Math.random();
 }
@@ -215,7 +218,7 @@ function pickNextItem() {
   if (state.mode === "weak") {
     const weak = items.filter((item) => {
       const stats = itemStats(item.id);
-      return isWeakStats(stats);
+      return isWeakStats(stats) || isWeakStats(termStats(item.termKey));
     });
     pool = weak.length ? weak : items;
   }
@@ -303,6 +306,8 @@ function answerCurrent(index) {
     flagged: false,
     timeMs: elapsedMs,
     tags: item.tags,
+    termKey: item.termKey,
+    contextId: item.contextId,
     at: now,
   });
   state.progress.attempts = state.progress.attempts.slice(0, 1000);
@@ -325,7 +330,7 @@ function nextQuestion() {
 
 function renderCurrentStats() {
   if (!state.current) return;
-  const stats = itemStats(state.current.id);
+  const stats = termStats(state.current.termKey);
   els.detailSeen.textContent = String(stats.seen);
   els.detailWrong.textContent = String(stats.wrong);
   els.detailStreak.textContent = String(stats.streak);
@@ -345,15 +350,14 @@ function renderMetrics() {
 }
 
 function weakItems() {
-  return state.dataset.items
-    .map((item) => ({ item, stats: itemStats(item.id) }))
+  return aggregateTermRows()
     .filter(({ stats }) => isWeakStats(stats))
     .sort((a, b) => {
       const aScore = b.stats.wrong - a.stats.wrong;
       if (aScore) return aScore;
       const unsureScore = (b.stats.uncertain || 0) - (a.stats.uncertain || 0);
       if (unsureScore) return unsureScore;
-      return a.item.term.localeCompare(b.item.term);
+      return a.term.localeCompare(b.term);
     });
 }
 
@@ -379,8 +383,8 @@ function renderRecentWrong() {
 
 function renderWeakTable() {
   const query = els.weakSearch.value.trim().toLowerCase();
-  const rows = weakItems().filter(({ item }) => {
-    const haystack = `${item.term} ${item.answer} ${item.tags.join(" ")}`.toLowerCase();
+  const rows = weakItems().filter((row) => {
+    const haystack = `${row.term} ${row.answers.join(" ")} ${row.tags.join(" ")}`.toLowerCase();
     return !query || haystack.includes(query);
   });
   els.weakTable.innerHTML = "";
@@ -393,17 +397,18 @@ function renderWeakTable() {
     els.weakTable.appendChild(tr);
     return;
   }
-  rows.forEach(({ item, stats }) => {
+  rows.forEach((row) => {
+    const stats = row.stats;
     const tr = document.createElement("tr");
     const accuracy = stats.seen ? stats.correct / stats.seen : 0;
     [
-      item.term,
-      item.answer,
+      row.term,
+      row.answers.join(" / "),
       String(stats.wrong),
       String(stats.uncertain || 0),
       stats.seen ? formatTime(averageTimeMs(stats)) : "-",
       pct(accuracy),
-      item.tags.join(", "),
+      row.tags.join(", "),
     ].forEach((text) => {
       const td = document.createElement("td");
       td.textContent = text;
@@ -461,8 +466,80 @@ function isWeakStats(stats) {
     || (stats.seen >= 2 && accuracy < 0.75);
 }
 
+function termStats(termKey) {
+  return aggregateStats(
+    state.dataset.items
+      .filter((item) => item.termKey === termKey)
+      .map((item) => itemStats(item.id))
+  );
+}
+
+function aggregateTermRows() {
+  const rows = new Map();
+  state.dataset.items.forEach((item) => {
+    if (!rows.has(item.termKey)) {
+      rows.set(item.termKey, {
+        term: item.term,
+        answers: new Set(),
+        tags: new Set(),
+        itemIds: [],
+      });
+    }
+    const row = rows.get(item.termKey);
+    row.answers.add(item.answer);
+    item.tags.forEach((tag) => row.tags.add(tag));
+    row.itemIds.push(item.id);
+  });
+  return Array.from(rows.values()).map((row) => ({
+    term: row.term,
+    answers: Array.from(row.answers),
+    tags: Array.from(row.tags),
+    stats: aggregateStats(row.itemIds.map((id) => itemStats(id))),
+  }));
+}
+
+function aggregateStats(statsList) {
+  return statsList.reduce((total, stats) => {
+    total.seen += stats.seen || 0;
+    total.correct += stats.correct || 0;
+    total.wrong += stats.wrong || 0;
+    total.uncertain += stats.uncertain || 0;
+    total.totalTimeMs += stats.totalTimeMs || 0;
+    total.flagged = total.flagged || Boolean(stats.flagged);
+    if (stats.lastTimeMs && (!total.lastSeenAt || new Date(stats.lastSeenAt) > new Date(total.lastSeenAt))) {
+      total.lastTimeMs = stats.lastTimeMs;
+      total.lastSeenAt = stats.lastSeenAt;
+    }
+    total.streak = Math.max(total.streak, stats.streak || 0);
+    return total;
+  }, {
+    seen: 0,
+    correct: 0,
+    wrong: 0,
+    uncertain: 0,
+    totalTimeMs: 0,
+    lastTimeMs: 0,
+    lastSeenAt: null,
+    streak: 0,
+    flagged: false,
+  });
+}
+
 function averageTimeMs(stats) {
   return stats.seen ? (stats.totalTimeMs || 0) / stats.seen : 0;
+}
+
+function normalizeTermKey(term) {
+  return String(term).trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function stableHash(value) {
+  let hash = 0;
+  const text = String(value);
+  for (let index = 0; index < text.length; index += 1) {
+    hash = ((hash << 5) - hash + text.charCodeAt(index)) | 0;
+  }
+  return Math.abs(hash).toString(36);
 }
 
 function formatTime(ms) {

@@ -3,12 +3,12 @@
   "stats": {
     "generatedAt": "2026-06-14T00:00:00Z",
     "sourceFileCount": 0,
-    "itemCount": 20,
+    "itemCount": 22,
     "tagCounts": {
-      "vocabulary": 20,
-      "business": 10,
+      "vocabulary": 22,
+      "business": 12,
       "schedule": 5,
-      "document": 4,
+      "document": 5,
       "workplace": 2
     }
   },
@@ -27,6 +27,23 @@
       "blankSentence": "The company will _____ the new policy next month.",
       "grammarFocus": "verb",
       "grammarNote": "동사 implement는 목적어 policy, plan, change와 함께 자주 쓰입니다.",
+      "prompt": "문맥상 implement의 뜻은?"
+    },
+    {
+      "id": "sample-implement-system",
+      "term": "implement",
+      "termKey": "implement",
+      "answer": "도입하다, 시행하다",
+      "choices": ["도입하다, 시행하다", "연기하다", "확인하다", "수정하다"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "action-verb"],
+      "source": "sample",
+      "quality": "sample",
+      "sentence": "The IT department will implement a new reservation system after the holiday weekend.",
+      "sentenceKo": "IT 부서는 연휴가 지난 뒤 새 예약 시스템을 도입할 예정이다.",
+      "blankSentence": "The IT department will _____ a new reservation system after the holiday weekend.",
+      "grammarFocus": "verb",
+      "grammarNote": "같은 implement라도 policy, plan, system 같은 목적어와 함께 '시행하다, 도입하다'로 자연스럽게 해석합니다.",
       "prompt": "문맥상 implement의 뜻은?"
     },
     {
@@ -278,6 +295,7 @@
       "tags": ["vocabulary", "business", "workplace"],
       "source": "sample",
       "quality": "sample",
+      "contextId": "sample-renovation-office",
       "contextType": "paragraph",
       "sentence": "The accounting office will be closed while new wiring is installed. During this period, a temporary workspace will be set up on the second floor so that employees can continue processing invoices.",
       "sentenceKo": "회계 사무실은 새 배선이 설치되는 동안 문을 닫는다. 이 기간 동안 직원들이 청구서 처리를 계속할 수 있도록 2층에 임시 업무 공간이 마련될 것이다.",
@@ -285,6 +303,25 @@
       "grammarFocus": "adjective",
       "grammarNote": "temporary는 명사 앞에서 '임시의'라는 뜻으로 쓰이며 workspace, position, arrangement와 자주 어울립니다.",
       "prompt": "문맥상 temporary의 뜻은?"
+    },
+    {
+      "id": "sample-paragraph-invoices",
+      "term": "invoices",
+      "termKey": "invoice",
+      "answer": "청구서",
+      "choices": ["청구서", "지원서", "회의록", "명찰"],
+      "answerIndex": 0,
+      "tags": ["vocabulary", "business", "document"],
+      "source": "sample",
+      "quality": "sample",
+      "contextId": "sample-renovation-office",
+      "contextType": "paragraph",
+      "sentence": "The accounting office will be closed while new wiring is installed. During this period, a temporary workspace will be set up on the second floor so that employees can continue processing invoices.",
+      "sentenceKo": "회계 사무실은 새 배선이 설치되는 동안 문을 닫는다. 이 기간 동안 직원들이 청구서 처리를 계속할 수 있도록 2층에 임시 업무 공간이 마련될 것이다.",
+      "blankSentence": "Employees can continue processing _____ in the temporary workspace.",
+      "grammarFocus": "noun",
+      "grammarNote": "invoice는 거래 금액을 청구하는 문서입니다. 여기서는 accounting office, processing과 함께 회계 업무 문맥을 만듭니다.",
+      "prompt": "문맥상 invoices의 뜻은?"
     },
     {
       "id": "sample-paragraph-screening",

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import hashlib
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -210,6 +211,8 @@ def build_learning_item(item: dict, cleaned_answer: str) -> dict:
     return {
         **item,
         "answer": cleaned_answer,
+        "termKey": normalize_term_key(term),
+        "contextId": f"ctx-{hashlib.sha1(sentence.encode('utf-8')).hexdigest()[:12]}",
         "choices": choices,
         "answerIndex": choices.index(cleaned_answer),
         "usage": usage,
@@ -222,6 +225,10 @@ def build_learning_item(item: dict, cleaned_answer: str) -> dict:
         "tags": tags,
         "prompt": f"문맥상 {term}의 뜻은?",
     }
+
+
+def normalize_term_key(term: str) -> str:
+    return re.sub(r"\s+", " ", term.strip().lower())
 
 
 def build_choices(answer: str) -> list[str]:
