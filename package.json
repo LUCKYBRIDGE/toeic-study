@@ -2,9 +2,10 @@
   "scripts": {
     "ingest": "python3 scripts/ingest.py",
     "validate": "python3 scripts/validate_items.py",
-    "build-data": "npm run ingest && npm run validate",
+    "build-approved": "python3 scripts/build_part5_approved.py",
+    "build-data": "npm run ingest && npm run validate && npm run build-approved",
     "start": "python3 -m http.server 5174",
-    "check": "node --check app/app.js && python3 -m py_compile scripts/ingest.py scripts/validate_items.py"
+    "check": "node --check app/app.js && python3 -m py_compile scripts/ingest.py scripts/validate_items.py scripts/build_part5_approved.py"
   },
   "private": true
 }

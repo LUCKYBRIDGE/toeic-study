@@ -6,6 +6,8 @@ const state = {
   dataset: { version: 1, stats: {}, items: [] },
   progress: { version: 1, attempts: [], itemStats: {}, createdAt: new Date().toISOString() },
   mode: "mixed",
+  questionType: "all",
+  practiceStarted: false,
   current: null,
   answered: false,
   questionStartedAt: 0,
@@ -16,11 +18,27 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
+const QUESTION_TYPES = {
+  all: "혼합",
+  meaning: "단어→뜻",
+  term: "뜻→단어",
+  word: "영단어",
+  conjunction: "접속사",
+  preposition: "전치사",
+  tense: "시제",
+};
+
 const els = {
   dataStatus: $("#dataStatus"),
   metricItems: $("#metricItems"),
   metricAccuracy: $("#metricAccuracy"),
   metricWeak: $("#metricWeak"),
+  practiceHome: $("#practiceHome"),
+  homeSummary: $("#homeSummary"),
+  homeTotal: $("#homeTotal"),
+  homeMeaning: $("#homeMeaning"),
+  homeTerm: $("#homeTerm"),
+  homeWeak: $("#homeWeak"),
   emptyState: $("#emptyState"),
   questionCard: $("#questionCard"),
   questionSource: $("#questionSource"),
@@ -31,6 +49,7 @@ const els = {
   choices: $("#choices"),
   answerPanel: $("#answerPanel"),
   answerText: $("#answerText"),
+  emptyStateText: $("#emptyStateText"),
   blankSentence: $("#blankSentence"),
   sentenceKo: $("#sentenceKo"),
   grammarNote: $("#grammarNote"),
@@ -44,6 +63,7 @@ const els = {
   recentWrongList: $("#recentWrongList"),
   weakTable: $("#weakTable"),
   weakSearch: $("#weakSearch"),
+  exportWeakButton: $("#exportWeakButton"),
   statAttempts: $("#statAttempts"),
   statForgetting: $("#statForgetting"),
   statAvgTime: $("#statAvgTime"),
@@ -94,6 +114,10 @@ function itemStats(itemId) {
   return state.progress.itemStats[itemId];
 }
 
+function existingItemStats(itemId) {
+  return state.progress.itemStats[itemId] || null;
+}
+
 function normalizeDataset(raw) {
   const items = Array.isArray(raw?.items) ? raw.items : [];
   const cleanItems = items
@@ -112,6 +136,7 @@ function normalizeDataset(raw) {
         term: String(item.term),
         termKey: item.termKey ? String(item.termKey) : normalizeTermKey(item.term),
         contextId: item.contextId ? String(item.contextId) : `ctx-${stableHash(item.sentence)}`,
+        questionType: normalizeQuestionType(item.questionType || item.type || inferQuestionType(item)),
         answer: String(item.answer),
         choices: choices.map(String),
         answerIndex,
@@ -124,7 +149,7 @@ function normalizeDataset(raw) {
         grammarFocus: item.grammarFocus ? String(item.grammarFocus) : "",
         grammarNote: item.grammarNote ? String(item.grammarNote) : "",
         quality: item.quality ? String(item.quality) : "unverified",
-        prompt: item.prompt ? String(item.prompt) : `문맥상 ${item.term}의 뜻은?`,
+        prompt: item.prompt ? String(item.prompt) : defaultPrompt(item),
       };
     });
   return {
@@ -155,7 +180,38 @@ function buildFallbackChoices(answer) {
   return [answer, ...defaults].slice(0, 4);
 }
 
+function normalizeQuestionType(value) {
+  const type = String(value || "meaning").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(QUESTION_TYPES, type) && type !== "all" ? type : "meaning";
+}
+
+function inferQuestionType(item) {
+  const focus = String(item?.grammarFocus || "").toLowerCase();
+  if (focus.includes("conjunction")) return "conjunction";
+  if (focus.includes("preposition")) return "preposition";
+  if (focus.includes("tense")) return "tense";
+  return "meaning";
+}
+
+function defaultPrompt(item) {
+  const type = normalizeQuestionType(item.questionType || item.type || inferQuestionType(item));
+  if (type === "meaning") return `문맥상 ${item.term}의 뜻은?`;
+  if (type === "term") return "뜻에 맞는 영어 단어는?";
+  if (type === "word") return "빈칸에 들어갈 가장 알맞은 영단어는?";
+  if (type === "conjunction") return "빈칸에 들어갈 가장 알맞은 접속사는?";
+  if (type === "preposition") return "빈칸에 들어갈 가장 알맞은 전치사는?";
+  if (type === "tense") return "빈칸에 들어갈 가장 알맞은 동사 형태는?";
+  return "빈칸에 들어갈 가장 알맞은 표현은?";
+}
+
 async function loadInitialDataset() {
+  const localApproved = await fetchDatasetCandidate("../private-data/generated/study-items.approved.json");
+  if (localApproved) {
+    state.dataset = localApproved;
+    saveDataset();
+    return "로컬 추출 데이터";
+  }
+
   const saved = safeParse(localStorage.getItem(DATASET_KEY), null);
   if (saved?.items?.length) {
     const normalized = normalizeDataset(saved);
@@ -166,29 +222,24 @@ async function loadInitialDataset() {
     localStorage.removeItem(DATASET_KEY);
   }
 
-  const candidates = [
-    "../private-data/generated/study-items.approved.json",
-    "./sample-items.json",
-  ];
-  for (const url of candidates) {
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) continue;
-      const data = await response.json();
-      const normalized = normalizeDataset(data);
-      if (isStudyReadyDataset(normalized)) {
-        state.dataset = normalized;
-        if (url.includes("private-data")) {
-          saveDataset();
-          return "로컬 추출 데이터";
-        }
-        return "샘플 데이터";
-      }
-    } catch {
-      // Try next candidate.
-    }
+  const sample = await fetchDatasetCandidate("./sample-items.json");
+  if (sample) {
+    state.dataset = sample;
+    return "샘플 데이터";
   }
   return "데이터 없음";
+}
+
+async function fetchDatasetCandidate(url) {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const normalized = normalizeDataset(data);
+    return isStudyReadyDataset(normalized) ? normalized : null;
+  } catch {
+    return null;
+  }
 }
 
 function loadProgress() {
@@ -199,8 +250,19 @@ function loadProgress() {
 }
 
 function weightedScore(item) {
-  const stats = itemStats(item.id);
-  const aggregate = termStats(item.termKey);
+  const stats = existingItemStats(item.id) || {
+    seen: 0,
+    correct: 0,
+    wrong: 0,
+    streak: 0,
+    lastSeenAt: null,
+    lastWrongAt: null,
+    lastTimeMs: 0,
+    totalTimeMs: 0,
+    uncertain: 0,
+    flagged: false,
+  };
+  const aggregate = termStats(item.termKey, false);
   const seenWeight = stats.seen === 0 ? 12 : 0;
   const wrongRate = stats.seen ? stats.wrong / stats.seen : 0;
   const unsureBoost = (stats.uncertain || 0) * 5 + (stats.flagged ? 12 : 0) + (aggregate.uncertain || 0) * 2;
@@ -211,49 +273,110 @@ function weightedScore(item) {
   return seenWeight + stats.wrong * 3 + wrongRate * 10 + unsureBoost + slowBoost + modeBoost + newBoost - recency + Math.random();
 }
 
+function isWeakItem(item) {
+  const stats = existingItemStats(item.id);
+  return isWeakStats(stats) || isWeakStats(termStats(item.termKey, false));
+}
+
+function isNewItem(item) {
+  return termStats(item.termKey, false).seen === 0;
+}
+
+function chooseWeighted(pool) {
+  if (!pool.length) return null;
+  return [...pool].sort((a, b) => weightedScore(b) - weightedScore(a))[0];
+}
+
+function todayPool(items) {
+  const weak = items.filter(isWeakItem);
+  const fresh = items.filter(isNewItem);
+  const review = items.filter((item) => !isWeakItem(item) && !isNewItem(item));
+
+  if (weak.length && fresh.length) {
+    return Math.random() < 0.6 ? weak : fresh;
+  }
+  if (weak.length) return weak;
+  if (fresh.length) return fresh;
+  return review.length ? review : items;
+}
+
+function modeItems(items = filteredItems()) {
+  if (state.mode === "all") return items;
+  if (state.mode === "weak") return items.filter(isWeakItem);
+  if (state.mode === "new") return items.filter(isNewItem);
+  if (state.mode === "paragraph") {
+    return items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
+  }
+  if (state.mode === "mixed") {
+    const byId = new Map();
+    items.filter(isWeakItem).forEach((item) => byId.set(item.id, item));
+    items.filter(isNewItem).forEach((item) => byId.set(item.id, item));
+    return byId.size ? Array.from(byId.values()) : items;
+  }
+  return items;
+}
+
 function pickNextItem() {
-  const items = state.dataset.items;
+  const items = filteredItems();
   if (!items.length) return null;
   if (state.mode === "all") return items[Math.floor(Math.random() * items.length)];
 
-  let pool = items;
-  if (state.mode === "weak") {
-    const weak = items.filter((item) => {
-      const stats = itemStats(item.id);
-      return isWeakStats(stats) || isWeakStats(termStats(item.termKey));
-    });
-    pool = weak.length ? weak : items;
-  }
-  if (state.mode === "new") {
-    const unseen = items.filter((item) => itemStats(item.id).seen === 0);
-    pool = unseen.length ? unseen : items;
+  let pool = modeItems(items);
+  if (state.mode === "mixed") {
+    pool = todayPool(items);
   }
   if (state.mode === "paragraph") {
     const paragraphs = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
     pool = paragraphs.length ? paragraphs : items;
   }
-  return [...pool].sort((a, b) => weightedScore(b) - weightedScore(a))[0];
+  return chooseWeighted(pool);
+}
+
+function filteredItems() {
+  if (state.questionType === "all") return state.dataset.items;
+  return state.dataset.items.filter((item) => item.questionType === state.questionType);
 }
 
 function renderCurrent() {
   const item = state.current;
-  const hasData = Boolean(item);
-  els.emptyState.classList.toggle("hidden", hasData);
-  els.questionCard.classList.toggle("hidden", !hasData);
-  if (!item) return;
+  const hasDataset = state.dataset.items.length > 0;
+  const hasQuestion = state.practiceStarted && Boolean(item);
+  els.practiceHome?.classList.toggle("hidden", state.practiceStarted || !hasDataset);
+  els.emptyState.classList.toggle("hidden", hasQuestion || (!state.practiceStarted && hasDataset));
+  els.questionCard.classList.toggle("hidden", !hasQuestion);
+  if (!hasQuestion) {
+    stopTimer();
+    state.answered = false;
+    state.lastAttemptId = null;
+    state.questionStartedAt = 0;
+    els.answerPanel.classList.add("hidden");
+    els.questionSource.textContent = "-";
+    els.questionTags.textContent = "-";
+    els.questionTimer.textContent = "0초";
+    els.questionSentence.textContent = "";
+    els.questionPrompt.textContent = "";
+    els.answerText.textContent = "";
+    els.blankSentence.textContent = "";
+    els.sentenceKo.textContent = "";
+    els.grammarNote.textContent = "";
+    els.choices.innerHTML = "";
+    renderEmptyState();
+    renderCurrentStats();
+    return;
+  }
 
   state.answered = false;
   state.lastAttemptId = null;
   startTimer();
   els.answerPanel.classList.add("hidden");
   els.questionSource.textContent = item.source;
-  els.questionTags.textContent = [item.quality, ...item.tags].filter(Boolean).join(" · ");
+  els.questionTags.textContent = [QUESTION_TYPES[item.questionType], item.quality, ...item.tags].filter(Boolean).join(" · ");
   els.questionSentence.classList.toggle("paragraph", item.contextType === "paragraph" || item.sentence.length > 180);
-  els.questionSentence.innerHTML = highlightTerm(item.sentence, item.term);
+  els.questionSentence.innerHTML = renderQuestionSentence(item);
   els.questionPrompt.textContent = item.prompt;
-  els.currentTerm.textContent = item.term;
+  els.currentTerm.textContent = currentItemLabel(item);
   els.answerText.textContent = item.answer;
-  els.blankSentence.textContent = item.blankSentence;
+  els.blankSentence.textContent = answerSentenceLine(item);
   els.sentenceKo.textContent = item.sentenceKo || "문장 해석 데이터 없음";
   els.grammarNote.textContent = item.grammarNote || "문법 포인트 데이터 없음";
 
@@ -267,6 +390,46 @@ function renderCurrent() {
     els.choices.appendChild(button);
   });
   renderCurrentStats();
+}
+
+function renderEmptyState() {
+  if (!els.emptyStateText) return;
+  if (!state.dataset.items.length) {
+    els.emptyStateText.textContent = "자료 탭에서 `study-items.json`을 가져오세요.";
+    return;
+  }
+  if (state.mode === "weak") {
+    els.emptyStateText.textContent = "아직 약점으로 저장된 단어가 없습니다. 틀리거나, 헷갈림/복습 체크를 한 단어가 생기면 여기서 집중 연습할 수 있습니다.";
+    return;
+  }
+  if (state.mode === "new") {
+    els.emptyStateText.textContent = "선택한 범위의 새 단어를 모두 풀었습니다. 오늘 모드나 전체 모드로 복습하세요.";
+    return;
+  }
+  els.emptyStateText.textContent = `${QUESTION_TYPES[state.questionType] || "선택한 유형"} 유형의 학습 데이터가 없습니다.`;
+}
+
+function renderQuestionSentence(item) {
+  if (item.questionType === "meaning") return highlightTerm(item.sentence, item.term);
+  return highlightBlank(item.blankSentence || item.sentence);
+}
+
+function highlightBlank(sentence) {
+  const safe = escapeHtml(sentence || "");
+  if (safe.includes("_____")) return safe.replace("_____", "<mark>_____</mark>");
+  return safe;
+}
+
+function currentItemLabel(item) {
+  if (item.questionType === "meaning") return item.term;
+  if (item.questionType === "term") return item.answer;
+  return `${QUESTION_TYPES[item.questionType]} · ${item.answer}`;
+}
+
+function answerSentenceLine(item) {
+  if (item.questionType === "meaning") return item.blankSentence;
+  if (item.questionType === "term") return `정답 단어: ${item.answer} · 뜻: ${item.sentence}`;
+  return `정답 문장: ${item.sentence}`;
 }
 
 function highlightTerm(sentence, term) {
@@ -310,6 +473,7 @@ function answerCurrent(index) {
     tags: item.tags,
     termKey: item.termKey,
     contextId: item.contextId,
+    questionType: item.questionType,
     at: now,
   });
   state.progress.attempts = state.progress.attempts.slice(0, 1000);
@@ -325,13 +489,48 @@ function answerCurrent(index) {
 }
 
 function nextQuestion() {
+  state.practiceStarted = true;
   state.current = pickNextItem();
   sessionStorage.setItem(SESSION_KEY, state.current?.id || "");
   renderCurrent();
+  renderAll();
+}
+
+function showPracticeHome() {
+  state.practiceStarted = false;
+  state.current = null;
+  state.answered = false;
+  state.lastAttemptId = null;
+  sessionStorage.removeItem(SESSION_KEY);
+  renderCurrent();
+  renderAll();
+}
+
+function setActiveMode(mode) {
+  state.mode = mode;
+  $$(".mode-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === mode);
+  });
+}
+
+function setActiveQuestionType(type) {
+  state.questionType = type;
+  $$(".type-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.type === type);
+  });
 }
 
 function renderCurrentStats() {
-  if (!state.current) return;
+  if (!state.current) {
+    els.currentTerm.textContent = "-";
+    els.detailSeen.textContent = "0";
+    els.detailWrong.textContent = "0";
+    els.detailStreak.textContent = "0";
+    els.detailUnsure.textContent = "0";
+    els.detailLastTime.textContent = "-";
+    els.detailAvgTime.textContent = "-";
+    return;
+  }
   const stats = termStats(state.current.termKey);
   els.detailSeen.textContent = String(stats.seen);
   els.detailWrong.textContent = String(stats.wrong);
@@ -344,15 +543,45 @@ function renderCurrentStats() {
 function renderMetrics() {
   const attempts = state.progress.attempts;
   const correct = attempts.filter((attempt) => attempt.correct).length;
-  const weakCount = weakItems().length;
-  els.metricItems.textContent = String(state.dataset.items.length);
+  const visibleItems = filteredItems();
+  const activeItems = modeItems(visibleItems);
+  const weakCount = weakItems(visibleItems).length;
+  els.metricItems.textContent = state.questionType === "all" && state.mode === "all"
+    ? String(state.dataset.items.length)
+    : `${activeItems.length}/${state.dataset.items.length}`;
   els.metricAccuracy.textContent = attempts.length ? pct(correct / attempts.length) : "0%";
   els.metricWeak.textContent = String(weakCount);
   els.dataStatus.textContent = `${state.dataset.items.length}개 항목`;
 }
 
-function weakItems() {
-  return aggregateTermRows()
+function renderHome() {
+  if (!els.practiceHome) return;
+  const total = state.dataset.items.length;
+  const attempts = state.progress.attempts.length;
+  const meaningCount = state.dataset.items.filter((item) => item.questionType === "meaning").length;
+  const termCount = state.dataset.items.filter((item) => item.questionType === "term").length;
+  const weakCount = weakItems().length;
+  const activeCount = modeItems().length;
+  const modeLabel = state.mode === "mixed"
+    ? "오늘 조합"
+    : state.mode === "weak"
+      ? "약점만"
+      : state.mode === "new"
+        ? "새 단어"
+        : state.mode === "paragraph"
+          ? "문단"
+          : "전체";
+  els.homeTotal.textContent = String(total);
+  els.homeMeaning.textContent = String(meaningCount);
+  els.homeTerm.textContent = String(termCount);
+  els.homeWeak.textContent = String(weakCount);
+  els.homeSummary.textContent = attempts
+    ? `${attempts}회 풀었습니다. ${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`
+    : `${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`;
+}
+
+function weakItems(items = state.dataset.items) {
+  return aggregateTermRows(items)
     .filter(({ stats }) => isWeakStats(stats))
     .sort((a, b) => {
       const aScore = b.stats.wrong - a.stats.wrong;
@@ -429,7 +658,9 @@ function renderStats() {
   els.statAvgTime.textContent = formatTime(avgTime);
   const wrongTags = {};
   attempts.filter((attempt) => !attempt.correct).forEach((attempt) => {
-    attempt.tags.forEach((tag) => {
+    [attempt.questionType ? QUESTION_TYPES[attempt.questionType] : null, ...(Array.isArray(attempt.tags) ? attempt.tags : [])]
+      .filter(Boolean)
+      .forEach((tag) => {
       wrongTags[tag] = (wrongTags[tag] || 0) + 1;
     });
   });
@@ -461,6 +692,7 @@ function renderDataView() {
 }
 
 function isWeakStats(stats) {
+  if (!stats) return false;
   const accuracy = stats.seen ? stats.correct / stats.seen : 1;
   return stats.flagged
     || (stats.uncertain || 0) > 0
@@ -468,35 +700,38 @@ function isWeakStats(stats) {
     || (stats.seen >= 2 && accuracy < 0.75);
 }
 
-function termStats(termKey) {
+function termStats(termKey, create = true) {
   return aggregateStats(
     state.dataset.items
       .filter((item) => item.termKey === termKey)
-      .map((item) => itemStats(item.id))
+      .map((item) => create ? itemStats(item.id) : existingItemStats(item.id))
+      .filter(Boolean)
   );
 }
 
-function aggregateTermRows() {
+function aggregateTermRows(items = state.dataset.items) {
   const rows = new Map();
-  state.dataset.items.forEach((item) => {
+  items.forEach((item) => {
     if (!rows.has(item.termKey)) {
       rows.set(item.termKey, {
         term: item.term,
         answers: new Set(),
         tags: new Set(),
+        questionTypes: new Set(),
         itemIds: [],
       });
     }
     const row = rows.get(item.termKey);
     row.answers.add(item.answer);
     item.tags.forEach((tag) => row.tags.add(tag));
+    row.questionTypes.add(item.questionType);
     row.itemIds.push(item.id);
   });
   return Array.from(rows.values()).map((row) => ({
     term: row.term,
     answers: Array.from(row.answers),
-    tags: Array.from(row.tags),
-    stats: aggregateStats(row.itemIds.map((id) => itemStats(id))),
+    tags: [...Array.from(row.questionTypes).map((type) => QUESTION_TYPES[type]).filter(Boolean), ...Array.from(row.tags)],
+    stats: aggregateStats(row.itemIds.map((id) => existingItemStats(id)).filter(Boolean)),
   }));
 }
 
@@ -610,6 +845,7 @@ function updateSelfCheckButtons() {
 
 function renderAll() {
   renderMetrics();
+  renderHome();
   renderCurrentStats();
   renderRecentWrong();
   renderWeakTable();
@@ -627,6 +863,31 @@ function downloadJson(filename, data) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function weakExportData() {
+  const rows = weakItems().map((row) => ({
+    term: row.term,
+    answers: row.answers,
+    tags: row.tags,
+    stats: {
+      seen: row.stats.seen,
+      correct: row.stats.correct,
+      wrong: row.stats.wrong,
+      uncertain: row.stats.uncertain || 0,
+      flagged: Boolean(row.stats.flagged),
+      averageTimeMs: row.stats.seen ? Math.round(averageTimeMs(row.stats)) : 0,
+      lastSeenAt: row.stats.lastSeenAt,
+    },
+  }));
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    itemCount: state.dataset.items.length,
+    attemptCount: state.progress.attempts.length,
+    weakCount: rows.length,
+    rows,
+  };
 }
 
 async function readJsonFile(file) {
@@ -724,9 +985,30 @@ function bindEvents() {
 
   $$(".mode-button").forEach((button) => {
     button.addEventListener("click", () => {
-      $$(".mode-button").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      state.mode = button.dataset.mode;
+      setActiveMode(button.dataset.mode);
+      if (state.practiceStarted) {
+        nextQuestion();
+      } else {
+        renderAll();
+      }
+    });
+  });
+
+  $$(".type-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveQuestionType(button.dataset.type);
+      if (state.practiceStarted) {
+        nextQuestion();
+      } else {
+        renderAll();
+      }
+    });
+  });
+
+  $$("[data-start-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveMode(button.dataset.startMode);
+      setActiveQuestionType(button.dataset.startType);
       nextQuestion();
     });
   });
@@ -743,6 +1025,7 @@ function bindEvents() {
   els.weakSearch.addEventListener("input", renderWeakTable);
   $("#exportDatasetButton").addEventListener("click", () => downloadJson("toeic-study-items.json", state.dataset));
   $("#exportProgressButton").addEventListener("click", () => downloadJson("toeic-study-progress.json", state.progress));
+  els.exportWeakButton?.addEventListener("click", () => downloadJson("toeic-study-weak-words.json", weakExportData()));
   $("#resetProgressButton").addEventListener("click", resetProgress);
 
   els.datasetInput.addEventListener("change", async (event) => {
@@ -757,8 +1040,7 @@ function bindEvents() {
     }
     state.dataset = normalized;
     saveDataset();
-    nextQuestion();
-    renderAll();
+    showPracticeHome();
     event.target.value = "";
   });
 
@@ -782,8 +1064,7 @@ async function init() {
   bindEvents();
   loadProgress();
   await loadInitialDataset();
-  const lastId = sessionStorage.getItem(SESSION_KEY);
-  state.current = state.dataset.items.find((item) => item.id === lastId) || pickNextItem();
+  showPracticeHome();
   renderCurrent();
   renderAll();
 }

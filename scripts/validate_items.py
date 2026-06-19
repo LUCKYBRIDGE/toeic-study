@@ -265,9 +265,18 @@ def write_dataset(path: Path, items: list[dict], extra: dict | None = None) -> N
     path.write_text(json.dumps({"version": 1, "stats": stats, "items": items}, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def approved_item_count() -> int:
+    if not APPROVED_FILE.exists():
+        return 0
+    try:
+        data = json.loads(APPROVED_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return 0
+    return len(data.get("items", []))
+
+
 def main() -> int:
     raw_items = load_items()
-    study_approved = []
     lexicon_approved = []
     review = []
     rejected = []
@@ -287,12 +296,10 @@ def main() -> int:
     lexicon_approved = dedupe(lexicon_approved)
     review = review[:1000]
     rejected = rejected[:1000]
+    preserved_approved_count = approved_item_count()
 
-    write_dataset(APPROVED_FILE, study_approved, {
-        "rawItemCount": len(raw_items),
-        "lexiconApprovedCount": len(lexicon_approved),
-        "note": "No generated item is promoted to study-approved until sentence, translation, and grammar are separately curated.",
-    })
+    # `study-items.approved.json` is curated by source-specific builders. Keep this
+    # broad validator from overwriting approved study data with provisional output.
     write_dataset(LEXICON_FILE, lexicon_approved, {"rawItemCount": len(raw_items), "reviewCount": len(review), "rejectedSampleCount": len(rejected)})
     write_dataset(REVIEW_FILE, review, {"rawItemCount": len(raw_items)})
     write_dataset(REJECTED_FILE, rejected, {"rawItemCount": len(raw_items)})
@@ -302,7 +309,7 @@ def main() -> int:
         "",
         f"- Generated at: {datetime.now(timezone.utc).isoformat()}",
         f"- Raw items: {len(raw_items)}",
-        f"- Study-approved items: {len(study_approved)}",
+        f"- Study-approved items preserved: {preserved_approved_count}",
         f"- Lexicon-approved items: {len(lexicon_approved)}",
         f"- Review sample items: {len(review)}",
         f"- Rejected sample items: {len(rejected)}",
@@ -317,7 +324,7 @@ def main() -> int:
         report_lines.append(f"- {count}: {source}")
     REPORT_FILE.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
 
-    print(f"Study-approved {len(study_approved)} of {len(raw_items)} raw items")
+    print(f"Study-approved preserved: {preserved_approved_count}")
     print(f"Lexicon-approved {len(lexicon_approved)} of {len(raw_items)} raw items")
     print(f"Wrote {LEXICON_FILE.relative_to(ROOT)}")
     print(f"Wrote {REPORT_FILE.relative_to(ROOT)}")

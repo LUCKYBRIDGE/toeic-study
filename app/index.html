@@ -48,19 +48,62 @@
           <div class="practice-layout">
             <section class="practice-panel" aria-live="polite">
               <div class="toolbar">
-                <div class="segmented" role="tablist" aria-label="출제 모드">
-                  <button class="mode-button active" data-mode="mixed">오늘</button>
-                  <button class="mode-button" data-mode="weak">약점</button>
-                  <button class="mode-button" data-mode="new">새 단어</button>
-                  <button class="mode-button" data-mode="paragraph">문단</button>
-                  <button class="mode-button" data-mode="all">전체</button>
+                <div class="toolbar-controls">
+                  <div class="segmented mode-segmented" role="tablist" aria-label="출제 모드">
+                    <button class="mode-button active" data-mode="mixed">오늘</button>
+                    <button class="mode-button" data-mode="weak">약점만</button>
+                    <button class="mode-button" data-mode="new">새 단어</button>
+                    <button class="mode-button" data-mode="paragraph">문단</button>
+                    <button class="mode-button" data-mode="all">전체</button>
+                  </div>
+                  <div class="segmented type-segmented" role="tablist" aria-label="문제 유형">
+                    <button class="type-button active" data-type="all">혼합</button>
+                    <button class="type-button" data-type="meaning">단어→뜻</button>
+                    <button class="type-button" data-type="term">뜻→단어</button>
+                    <button class="type-button" data-type="word">영단어</button>
+                    <button class="type-button" data-type="conjunction">접속사</button>
+                    <button class="type-button" data-type="preposition">전치사</button>
+                    <button class="type-button" data-type="tense">시제</button>
+                  </div>
                 </div>
                 <button class="icon-button" id="shuffleButton" title="다른 문제">↻</button>
               </div>
 
+              <section id="practiceHome" class="practice-home">
+                <div class="home-copy">
+                  <span>학습 준비</span>
+                  <h2>오늘 풀 문제를 고르세요</h2>
+                  <p id="homeSummary">자료를 불러오는 중입니다.</p>
+                </div>
+                <div class="home-actions">
+                  <button class="primary-button" type="button" data-start-mode="mixed" data-start-type="all">오늘 학습 시작</button>
+                  <button class="secondary-button" type="button" data-start-mode="weak" data-start-type="all">약점만 풀기</button>
+                  <button class="secondary-button" type="button" data-start-mode="new" data-start-type="all">새 단어</button>
+                  <button class="secondary-button" type="button" data-start-mode="mixed" data-start-type="term">뜻→단어 시작</button>
+                </div>
+                <div class="home-counts">
+                  <div>
+                    <span>전체</span>
+                    <strong id="homeTotal">0</strong>
+                  </div>
+                  <div>
+                    <span>단어→뜻</span>
+                    <strong id="homeMeaning">0</strong>
+                  </div>
+                  <div>
+                    <span>뜻→단어</span>
+                    <strong id="homeTerm">0</strong>
+                  </div>
+                  <div>
+                    <span>약점</span>
+                    <strong id="homeWeak">0</strong>
+                  </div>
+                </div>
+              </section>
+
               <div id="emptyState" class="empty-state hidden">
                 <strong>학습 데이터가 없습니다.</strong>
-                <span>자료 탭에서 `study-items.json`을 가져오세요.</span>
+                <span id="emptyStateText">자료 탭에서 `study-items.json`을 가져오세요.</span>
               </div>
 
               <article id="questionCard" class="question-card">
@@ -94,7 +137,7 @@
 
             <aside class="study-panel">
               <div class="panel-header">
-                <h2>현재 단어</h2>
+                <h2>현재 항목</h2>
                 <span id="currentTerm">-</span>
               </div>
               <dl class="detail-list">
@@ -134,14 +177,17 @@
         <section class="view" id="view-weak">
           <div class="section-header">
             <h2>약점 단어</h2>
-            <input id="weakSearch" type="search" placeholder="검색" />
+            <div class="section-actions">
+              <input id="weakSearch" type="search" placeholder="검색" />
+              <button class="secondary-button" id="exportWeakButton" type="button">약점 내보내기</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>단어</th>
-                  <th>뜻</th>
+                  <th>항목</th>
+                  <th>정답</th>
                   <th>오답</th>
                   <th>헷갈림</th>
                   <th>평균 시간</th>
@@ -206,6 +252,6 @@
       </main>
     </div>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260619-main-start"></script>
   </body>
 </html>
