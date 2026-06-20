@@ -1528,20 +1528,18 @@ def stable_choices_by_usage(answer: str, usage: str, entries: list[dict], pool_k
             if val != answer and val not in same_usage_pool:
                 same_usage_pool.append(val)
                 
-    # 2단계: 품사 일치 오답 풀이 부족한 경우를 위해 전체 단어 풀도 확보
-    all_pool = []
-    for entry in entries:
-        val = entry["answer"] if pool_key == "answer" else entry["term"]
-        if val != answer and val not in all_pool:
-            all_pool.append(val)
-            
-    # 3단계: 품사 일치 오답을 먼저 쓰고 모자라면 전체 풀에서 채움
+    # 품사 일치 풀만 사용
     final_pool = same_usage_pool
-    for val in all_pool:
-        if len(final_pool) >= 40:
-            break
-        if val not in final_pool:
-            final_pool.append(val)
+    # 만약 동일 품사 풀이 극도로 부족하여 오답 3개를 채울 수 없는 특수 상황일 때만 전체 풀로 폴백
+    if len(final_pool) < 3:
+        all_pool = []
+        for entry in entries:
+            val = entry["answer"] if pool_key == "answer" else entry["term"]
+            if val != answer and val not in all_pool:
+                all_pool.append(val)
+        for val in all_pool:
+            if val not in final_pool:
+                final_pool.append(val)
             
     # 4단계: 해시 시드를 이용해 오답 3개 무작위 선출 (중복/유사 의미 방지 적용)
     start = int(hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8], 16) if final_pool else 0
@@ -1570,6 +1568,7 @@ def stable_choices_by_usage(answer: str, usage: str, entries: list[dict], pool_k
     choices = [answer] + distractors
     choices.sort()
     return choices
+
 
 
 def build_numbered_vocab_items() -> list[dict]:
@@ -1604,22 +1603,8 @@ def build_numbered_vocab_items() -> list[dict]:
             meaning_sentence_ko = smart["sentenceKo"]
             custom_note = smart["grammarNote"]
         else:
-            if usage == "noun":
-                # 사람 명사 여부 판정
-                is_person = False
-                person_suffixes = ("er", "or", "ist", "ant", "ent", "ee", "representative", "executive", "expert", "professional", "specialist", "officer", "secretary", "director")
-                person_meanings = ("사람", "원", "가", "관", "자", "생", "주", "의사", "강사", "변호사", "직원", "임원", "지원자", "대표", "감독")
-                if term.lower().endswith(person_suffixes) or any(word in answer for word in person_meanings):
-                    is_person = True
-                templates = VOCAB_TEMPLATES["noun-person"] if is_person else VOCAB_TEMPLATES["noun-thing"]
-            else:
-                templates = VOCAB_TEMPLATES.get(usage, VOCAB_TEMPLATES["noun"])
-                
-            template = templates[number % len(templates)]
-            
-            # 단어 치환 및 명사일 때 을/를 조사 붙이기
-            meaning_sentence = template["sentence"].replace("{term}", term)
-            meaning_sentence_ko = template["sentenceKo"].replace("{meaning}", answer).replace("{particle}", korean_particle(answer))
+            meaning_sentence = term
+            meaning_sentence_ko = f"{term}: {answer}"
             custom_note = f"품사 분류 | {usage.upper()}\n" + (
                 "동사 어휘는 행동이나 주어의 동작을 설명합니다." if usage == "verb" else
                 "형용사는 명사의 상태와 성질을 묘사합니다." if usage == "adjective" else
@@ -1631,10 +1616,13 @@ def build_numbered_vocab_items() -> list[dict]:
         meaning_choices = stable_choices_by_usage(answer, usage, entries, "answer", meaning_id)
         
         # 뜻 맞추기 문제용 빈칸 만들기
-        blank_meaning_sentence = meaning_sentence.replace(term, "_____", 1)
-        # 만약 대소문자 문제로 치환 안됐을 때를 대비한 2차 치환
-        if "_____" not in blank_meaning_sentence:
-            blank_meaning_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+        if has_smart:
+            blank_meaning_sentence = meaning_sentence.replace(term, "_____", 1)
+            # 만약 대소문자 문제로 치환 안됐을 때를 대비한 2차 치환
+            if "_____" not in blank_meaning_sentence:
+                blank_meaning_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+        else:
+            blank_meaning_sentence = f"{term} = _____"
 
         # 1. 단어 뜻 맞추기 문제 (meaning)
         items.append({
@@ -1656,9 +1644,12 @@ def build_numbered_vocab_items() -> list[dict]:
         term_id = f"numbered-vocab-term-{number:04d}-{stable_id(answer, term)}"
         term_choices = stable_choices_by_usage(term, usage, entries, "term", term_id)
         
-        blank_term_sentence = meaning_sentence.replace(term, "_____", 1)
-        if "_____" not in blank_term_sentence:
-            blank_term_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+        if has_smart:
+            blank_term_sentence = meaning_sentence.replace(term, "_____", 1)
+            if "_____" not in blank_term_sentence:
+                blank_term_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+        else:
+            blank_term_sentence = f"{term} = _____"
 
         items.append({
             **base,
@@ -1675,24 +1666,6 @@ def build_numbered_vocab_items() -> list[dict]:
             "prompt": f"'{answer}'에 해당하는 영어 단어는?",
         })
 
-        # 3. 영문장 속 빈칸 단어 채우기 문제 (Part 5 실전형 - word)
-        word_id = f"numbered-vocab-word-{number:04d}-{stable_id(term, answer)}"
-        word_choices = stable_choices_by_usage(term, usage, entries, "term", word_id)
-        
-        items.append({
-            **base,
-            "id": word_id,
-            "questionType": "word",
-            "contextId": f"numbered-vocab-{number:04d}",
-            "answer": term,
-            "choices": word_choices,
-            "answerIndex": word_choices.index(term),
-            "sentence": meaning_sentence,
-            "sentenceKo": meaning_sentence_ko,
-            "blankSentence": blank_term_sentence,
-            "grammarNote": f"{numbered_vocab_note(entry, 'word', word_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
-            "prompt": "문맥상 빈칸에 들어갈 가장 알맞은 영단어는?",
-        })
 
     return items
 
