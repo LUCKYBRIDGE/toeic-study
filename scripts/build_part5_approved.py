@@ -718,12 +718,77 @@ def vocab_tip(term: str, answer: str, usage: str) -> str:
     return f"{term}는 토익 문서, 업무, 공지 문맥에서 명사로 자주 확인해야 하는 기본 어휘입니다."
 
 
-def vocab_grammar_note(term: str, answer: str, usage: str) -> str:
-    return (
-        f"어휘 해설 | {term}의 뜻은 '{answer}'입니다. 선택지는 모두 승인된 원본 어휘 목록에서 가져온 뜻이지만, 이 단어와 직접 연결되는 뜻은 하나뿐입니다.\n"
-        f"토익 포인트 | {vocab_tip(term, answer, usage)}\n"
-        "오답 포인트 | 뜻 고르기 문제는 비슷해 보이는 한국어 선택지보다 영어 단어의 품사와 자주 쓰이는 문맥을 먼저 떠올리는 것이 안전합니다."
+def find_term_for_meaning(meaning: str, entries: list[dict]) -> str:
+    for entry in entries:
+        if entry.get("answer") == meaning:
+            return entry["term"]
+    return ""
+
+
+def find_meaning_for_term(term: str, entries: list[dict]) -> str:
+    for entry in entries:
+        if entry.get("term") == term:
+            return entry["answer"]
+    return ""
+
+
+def build_vocab_explanation(
+    term: str,
+    answer: str,
+    meanings_list: list[str],
+    direction: str,
+    choices: list[str],
+    entries: list[dict],
+    usage: str
+) -> str:
+    secondary_meanings = [m for m in meanings_list if m != answer]
+    meanings_str = " / ".join(dict.fromkeys(meanings_list))
+    sec_str = ", ".join(dict.fromkeys(secondary_meanings)) if secondary_meanings else "없음"
+    
+    header = (
+        f"🎯 **주요 뜻** | {answer}\n"
+        f"📚 **보조 뜻** | {sec_str}\n\n"
     )
+    
+    if direction == "meaning":
+        letter = "ABCD"[choices.index(answer)] if answer in choices else "?"
+        exposition = f"어휘 해설 | 문맥 속에서 가장 알맞은 뜻을 고르는 문제입니다. 문장 속에서 **{term}**은 **'{answer}'**(으)로 쓰였습니다. 따라서 정답은 ({letter})입니다."
+    elif direction == "term":
+        letter = "ABCD"[choices.index(term)] if term in choices else "?"
+        exposition = f"어휘 해설 | 한글 뜻 **'{answer}'**에 해당하는 올바른 영단어를 고르는 문제입니다. 정답인 **{term}**은 **'{answer}'**을(를) 뜻합니다. 따라서 정답은 ({letter})입니다."
+    else: # word
+        letter = "ABCD"[choices.index(term)] if term in choices else "?"
+        exposition = f"어휘 해설 | 문맥상 빈칸에 들어갈 가장 알맞은 어휘를 고르는 문제입니다. 문장에 **{term}**('{answer}')을(를) 넣었을 때 의미가 자연스럽습니다. 따라서 정답은 ({letter})입니다."
+        
+    analysis_lines = []
+    for choice in choices:
+        if direction == "meaning":
+            if choice == answer:
+                continue
+            dist_term = find_term_for_meaning(choice, entries)
+            if dist_term:
+                analysis_lines.append(f"- **{choice}** : 영단어 **{dist_term}**의 뜻입니다.")
+            else:
+                analysis_lines.append(f"- **{choice}**")
+        else: # term or word
+            if choice == term:
+                continue
+            dist_meaning = find_meaning_for_term(choice, entries)
+            if dist_meaning:
+                analysis_lines.append(f"- **{choice}** : '{dist_meaning}'을(를) 뜻합니다.")
+            else:
+                analysis_lines.append(f"- **{choice}**")
+                
+    analysis_text = "오답 분석 |\n" + ("\n".join(analysis_lines) if analysis_lines else "선택지의 다른 단어들도 함께 분석하면 단어량이 빠르게 늘어납니다.")
+    
+    tip = vocab_tip(term, answer, usage)
+    toeic_point = f"토익 포인트 | {tip}"
+    
+    return f"{header}{exposition}\n\n{analysis_text}\n\n{toeic_point}"
+
+
+def vocab_grammar_note(term: str, answer: str, usage: str, choices: list[str], entries: list[dict]) -> str:
+    return build_vocab_explanation(term, answer, [answer], "meaning", choices, entries, usage)
 
 
 def grammar_note(question_type: str, answer: str) -> tuple[str, str]:
@@ -788,16 +853,55 @@ def valid_vocab_pair(term: str, answer: str) -> bool:
     return True
 
 
+def contains_korean(s: str) -> bool:
+    return any(0xAC00 <= ord(c) <= 0xD7A3 or 0x1100 <= ord(c) <= 0x11FF for c in s)
+
+
+def is_overlapping(val1: str, val2: str) -> bool:
+    # 1. Normalize spacing and lowercase
+    s1 = "".join(val1.lower().split())
+    s2 = "".join(val2.lower().split())
+    
+    # 2. Check substring relation
+    if s1 in s2 or s2 in s1:
+        return True
+        
+    # 3. Split by common Korean separators and check intersection
+    parts1 = set(p.strip().lower() for p in re.split(r'[,;/~()]', val1) if p.strip())
+    parts2 = set(p.strip().lower() for p in re.split(r'[,;/~()]', val2) if p.strip())
+    
+    if parts1.intersection(parts2):
+        return True
+        
+    return False
+
+
 def stable_choices(answer: str, answers: list[str], seed: str) -> list[str]:
     pool = [candidate for candidate in dict.fromkeys(answers) if candidate != answer]
     start = int(hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8], 16) if pool else 0
     distractors: list[str] = []
     index = start
-    while pool and len(distractors) < 3:
+    attempts = 0
+    max_attempts = len(pool) * 2
+    
+    while pool and len(distractors) < 3 and attempts < max_attempts:
         candidate = pool[index % len(pool)]
-        if candidate not in distractors:
-            distractors.append(candidate)
+        attempts += 1
         index += 17
+        if candidate in distractors:
+            continue
+        if contains_korean(answer) or contains_korean(candidate):
+            if is_overlapping(candidate, answer) or any(is_overlapping(candidate, d) for d in distractors):
+                continue
+        distractors.append(candidate)
+        
+    if len(distractors) < 3:
+        for candidate in pool:
+            if len(distractors) >= 3:
+                break
+            if candidate not in distractors and candidate != answer:
+                distractors.append(candidate)
+                
     choices = [answer, *distractors]
     return sorted(choices, key=lambda choice: stable_id(seed, choice))
 
@@ -952,27 +1056,524 @@ def numbered_vocab_tags(number: int) -> list[str]:
     return ["vocabulary", "numbered-voca", f"{band_start:04d}-{band_end:04d}"]
 
 
-def numbered_vocab_note(entry: dict, direction: str) -> str:
+def infer_usage_from_meaning(term: str, meaning: str) -> str:
+    lower = term.strip().lower()
+    meaning = meaning.strip()
+    if " " in lower:
+        if lower.startswith(("in ", "at ", "on ", "by ", "for ", "with ", "without ", "due to", "owing to")):
+            return "adverbial-phrase"
+        if lower.startswith(("be ", "become ", "remain ")):
+            return "verb-phrase"
+        if "하다" in meaning:
+            return "verb-phrase"
+        return "noun-phrase"
+    if "하다" in meaning or meaning.endswith("되다") or meaning.endswith("하다"):
+        return "verb"
+    if meaning.endswith(("한", "있는", "없는", "적인", "된", "할")):
+        return "adjective"
+    if lower.endswith("ly") or meaning.endswith(("게", "히", "으로")):
+        return "adverb"
+    return "noun"
+
+
+def korean_particle(value: str) -> str:
+    if not value:
+        return "을"
+    code = ord(value[-1])
+    if 0xAC00 <= code <= 0xD7A3:
+        return "을" if (code - 0xAC00) % 28 else "를"
+    return "을"
+
+
+SMART_VOCAB_REGISTRY = {
+    "executive": {
+        "sentence": "The chief executive officer decided to delay the launch of the new software.",
+        "sentenceKo": "최고 경영진(임원)은 새로운 소프트웨어의 출시를 연기하기로 결정했다.",
+        "grammarNote": "executive는 '경영진, 임원'이라는 뜻의 명사이며, '경영의, 임원진의'라는 형용사로도 널리 쓰입니다. 비즈니스 직책(executive officer) 등에 단골로 출제되는 어휘입니다."
+    },
+    "accommodation": {
+        "sentence": "The hotel provides luxury accommodations and excellent service for business travelers.",
+        "sentenceKo": "그 호텔은 비즈니스 여행객들에게 호화로운 숙박 시설과 훌륭한 서비스를 제공한다.",
+        "grammarNote": "accommodation은 '숙박 시설, 편의 시설'이라는 뜻의 명사로, 토익에서는 대개 복수형인 accommodations 형태로 빈출되므로 함께 외우는 것이 요령입니다."
+    },
+    "temporary": {
+        "sentence": "The HR manager hired a temporary employee to handle the administrative tasks during summer.",
+        "sentenceKo": "인사 담당자는 여름 동안 행정 업무를 처리하기 위해 임시 직원을 고용했다.",
+        "grammarNote": "temporary는 '임시의, 일시적인'이라는 뜻의 형용사로, 반대어인 permanent(정구적인, 영구의)와 대비하여 자격이나 상태를 묻는 단어로 빈출됩니다."
+    },
+    "contribute": {
+        "sentence": "All staff members are encouraged to contribute their ideas to the marketing campaign.",
+        "sentenceKo": "모든 직원들은 마케팅 캠페인에 그들의 아이디어를 기여하도록 권장된다.",
+        "grammarNote": "contribute는 '기여하다, 공헌하다'라는 뜻의 동사로, 목적어를 직접 취해 'A를 기여하다'로 쓰이거나, 자동사로서 contribute to 명사 (~에 기여하다) 형태로 매우 빈출됩니다."
+    },
+    "accumulate": {
+        "sentence": "Customers can accumulate reward points every time they make a purchase online.",
+        "sentenceKo": "고객들은 온라인으로 구매를 할 때마다 적립 포인트를 축적할(모을) 수 있다.",
+        "grammarNote": "accumulate는 '축적하다, 모으다'라는 뜻의 타동사로, 주로 포인트(points), 경험(experience), 자금(wealth) 등을 목적으로 취해 비즈니스 혜택 설명에서 출제됩니다."
+    },
+    "applicant": {
+        "sentence": "Each applicant must submit their references along with the updated resume.",
+        "sentenceKo": "각 지원자는 업데이트된 이력서와 함께 추천서를 제출해야 한다.",
+        "grammarNote": "applicant는 '지원자, 신청자'라는 뜻의 명사로, 동사인 apply(지원하다), 명사인 application(지원서, 신청서)과 형태를 구분하는 품사 자격 문제로 자주 출제됩니다."
+    },
+    "implement": {
+        "sentence": "The board decided to implement new security measures at the headquarters.",
+        "sentenceKo": "이사회는 본사에 새로운 보안 조치를 시행하기로 결정했다.",
+        "grammarNote": "implement는 '(정책, 규칙, 계획 등을) 시행하다, 이행하다'라는 뜻의 대표 동사로, carry out와 동의어로 쓰이며 뒤에 정책(policy)이나 조치(measures)를 목적어로 자주 취합니다."
+    },
+    "postpone": {
+        "sentence": "The management team had to postpone the planning meeting until next Monday.",
+        "sentenceKo": "경영진은 기획 회의를 다음 주 월요일까지 연기해야 했다.",
+        "grammarNote": "postpone은 '연기하다, 미루다'라는 뜻의 동사로, delay, put off 등과 유사어입니다. 전치사 until, to 등과 함께 시점을 연기하는 문맥에서 주로 출제됩니다."
+    },
+    "renew": {
+        "sentence": "Clients who wish to renew their subscription should contact customer service.",
+        "sentenceKo": "구독을 갱신하고자 하는 고객은 고객 서비스 부서에 연락해야 한다.",
+        "grammarNote": "renew는 '갱신하다, 재개하다'라는 뜻의 동사로, 주로 계약(contract), 구독(subscription), 회원 자격(membership) 등을 갱신하는 비즈니스 거래 맥락에서 출제됩니다."
+    },
+    "reimburse": {
+        "sentence": "The company will reimburse employees for travel expenses incurred during the business trip.",
+        "sentenceKo": "회사는 출장 중 발생한 여비를 직원들에게 변제해 줄(비용을 돌려줄) 것이다.",
+        "grammarNote": "reimburse는 '변제하다, 상환하다'라는 뜻의 중요 동사로, 주로 'reimburse A for B' (A에게 B 비용을 돌려주다) 구조로 전치사 for와 짝을 이루어 단골 출제됩니다."
+    },
+    "compliance": {
+        "sentence": "The factory operates in strict compliance with safety regulations.",
+        "sentenceKo": "그 공장은 안전 규정을 엄격히 준수하여 운영된다.",
+        "grammarNote": "compliance는 '(규정, 법의) 준수, 따름'이라는 뜻의 명사로, 동사인 comply(comply with, 준수하다)와 짝을 이루며 'in compliance with' (~을 준수하여)라는 통째 숙어 표현으로 매우 빈출됩니다."
+    },
+    "allocate": {
+        "sentence": "The city council agreed to allocate funds for the renovation of the public park.",
+        "sentenceKo": "시 의회는 공공 공원의 개보수를 위해 자금을 할당하기로 합의했다.",
+        "grammarNote": "allocate는 '(자금, 시간 등을) 할당하다, 배분하다'라는 동사로, budget(예산을 책정하다)이나 assign(배정하다)과 유사한 맥락에서 예산 분배 시 출제됩니다."
+    },
+    "alternative": {
+        "sentence": "We must find alternative solutions if the supplier fails to deliver on time.",
+        "sentenceKo": "공급업체가 제때 납품하지 못할 경우 우리는 대안적인 해결책을 찾아야 한다.",
+        "grammarNote": "alternative는 명사로 '대안'이라는 뜻 외에도 형용사로서 '대안적인, 다른'이라는 뜻으로 쓰입니다. 명사를 꾸미는 형용사 자리에 자주 출제됩니다."
+    },
+    "approximately": {
+        "sentence": "The construction project will take approximately three months to complete.",
+        "sentenceKo": "건설 프로젝트를 완료하는 데 대략 3개월이 소요될 것이다.",
+        "grammarNote": "approximately는 '대략, 거의'라는 뜻의 부사로, 숫자나 기간 표현(three months 등)을 앞에서 수식하며 정도를 조절하는 부사 어휘로 토익에 빈출됩니다."
+    },
+    "negotiate": {
+        "sentence": "The purchasing department was able to negotiate a better price with the vendor.",
+        "sentenceKo": "구매 부서는 판매업체와 더 나은 가격을 협상할 수 있었다.",
+        "grammarNote": "negotiate는 '협상하다, 절충하다'라는 뜻의 동사로, 주로 negotiate with 대상 (누구와 협상하다), negotiate a contract (계약을 타결하다) 등의 콜로케이션으로 쓰います."
+    },
+    "authorize": {
+        "sentence": "Only the department manager is allowed to authorize overtime work.",
+        "sentenceKo": "부서장만이 시간 외 근무를 승인할(권한을 부여할) 수 있다.",
+        "grammarNote": "authorize는 '승인하다, 권한을 부여하다'라는 뜻의 동사로, 형용사인 authorized (공인된, 승인된) 및 명사인 authority (권한, 당국)와 구분하는 법을 묻습니다."
+    },
+    "confidential": {
+        "sentence": "Employees are strictly prohibited from sharing confidential client documents.",
+        "sentenceKo": "직원들은 기밀 고객 문서를 공유하는 것이 엄격히 금지된다.",
+        "grammarNote": "confidential은 '기밀의, 비밀의'라는 형용사로, 주로 서류(documents), 정보(information), 업무(records) 등의 명사를 꾸며 보안 규정 관련 지문에서 자주 출제됩니다."
+    },
+    "collaboration": {
+        "sentence": "The new product was developed in close collaboration with our overseas partners.",
+        "sentenceKo": "신제품은 우리의 해외 파트너들과의 긴밀한 협력을 통해 개발되었다.",
+        "grammarNote": "collaboration은 '협력, 공동 작업'이라는 명사로, 'in collaboration with' (~와 협력하여)라는 형태로 자주 쓰이며, 동사 collaborate(협력하다)와 함께 빈출됩니다."
+    },
+    "delegation": {
+        "sentence": "A delegation of industry experts will visit the manufacturing facility tomorrow.",
+        "sentenceKo": "업계 전문가 대표단이 내일 제조 시설을 방문할 예정이다.",
+        "grammarNote": "delegation은 '대표단'이라는 명사 외에도 '위임, 권한 이양'이라는 추상 명사로도 쓰입니다. 주로 사람들의 집단을 뜻하는 주어로 출제됩니다."
+    },
+    "evaluate": {
+        "sentence": "The supervisor will evaluate the performance of each intern next week.",
+        "sentenceKo": "감독관은 다음 주에 각 인턴의 업무 성과를 평가할 것이다.",
+        "grammarNote": "evaluate는 '평가하다, 감정하다'라는 동사로, 주로 성과(performance), 가치(value), 계획(proposal)을 목적으로 가집니다. 명사형은 evaluation(평가)입니다."
+    },
+    "innovative": {
+        "sentence": "The startup gained popularity for its innovative design of office furniture.",
+        "sentenceKo": "그 스타트업은 사무용 가구의 혁신적인 디자인으로 인기를 얻었다.",
+        "grammarNote": "innovative는 '혁신적인, 획기적인'이라는 뜻의 형용사로, 명사인 innovation(혁신)이나 동사 innovate(혁신하다)와 어미를 구분하는 형태로 형용사 자리에 자주 옵니다."
+    },
+    "mandatory": {
+        "sentence": "Attendance at the annual safety training is mandatory for all laboratory staff.",
+        "sentenceKo": "연례 안전 교육 참석은 모든 실험실 직원들에게 의무적이다(필수이다).",
+        "grammarNote": "mandatory는 '의무적인, 필수의'라는 뜻의 형용사로, compulsory나 required와 유사하며 be동사 뒤 주격 보어 자리나 명사를 수식하는 형용사 자리에 자주 빈출됩니다."
+    },
+    "objective": {
+        "sentence": "The primary objective of the advertising campaign is to increase brand awareness.",
+        "sentenceKo": "광고 캠페인의 주요 목적은 브랜드 인지도를 높이는 것이다.",
+        "grammarNote": "objective는 명사로 '목적, 목표' (goal, target)라는 뜻을 가지며, 형용사로서는 '객관적인' (반대어: subjective)이라는 뜻을 가집니다. 문맥상 구분이 중요합니다."
+    },
+    "qualification": {
+        "sentence": "Candidates must meet all the qualifications listed in the job description.",
+        "sentenceKo": "지원자들은 직무 설명서에 기재된 모든 자격 요건을 충족해야 한다.",
+        "grammarNote": "qualification은 '자격 요건, 면허'를 뜻하는 명사로, 동사 meet/satisfy (~을 충족하다)와 어울려 'meet the qualifications' (자격을 충족하다) 패턴으로 자주 나옵니다."
+    },
+    "revenue": {
+        "sentence": "The company reported a significant increase in annual revenue this fiscal year.",
+        "sentenceKo": "회사는 이번 회계연도에 연간 총 수입(매출)이 크게 증가했다고 보고했다.",
+        "grammarNote": "revenue는 '매출, 수입, 세입'을 뜻하는 명사로, profit(이익)이나 income(소득)과 맥락을 같이 하여 재무 상태나 실적 발표 지문에서 반드시 출제되는 핵심 명사입니다."
+    },
+    "strategic": {
+        "sentence": "The board decided to make a strategic investment in renewable energy resources.",
+        "sentenceKo": "이사회는 재생 에너지 자원에 전략적인 투자를 단행하기로 결정했다.",
+        "grammarNote": "strategic은 '전략적인, 중요한'이라는 뜻의 형용사로, 명사인 strategy(전략)에서 파생되었습니다. 투자(investment), 제휴(partnership) 등의 명사를 자주 꾸며줍니다."
+    },
+    "subsequent": {
+        "sentence": "The first meeting was brief, but subsequent discussions were much more detailed.",
+        "sentenceKo": "첫 회의는 짧았지만, 그 이후의(차후의) 논의들은 훨씬 더 상세했다.",
+        "grammarNote": "subsequent는 '그 다음의, 차후의'라는 뜻의 형용사로, 주로 시간이나 사건의 선후 관계를 묘사할 때 명사(years, events, discussions) 앞에 쓰입니다."
+    },
+    "termination": {
+        "sentence": "Early termination of the lease contract requires a written notice 30 days in advance.",
+        "sentenceKo": "임대차 계약의 조기 해지(종료)는 30일 전에 서면 통지가 필요하다.",
+        "grammarNote": "termination은 '종료, 해지, 완결'이라는 뜻의 명사로, 주로 계약(contract, lease)이나 고용 관계의 종료를 나타내는 법률 및 비즈니스 조항에서 자주 출제됩니다."
+    },
+    "unanimous": {
+        "sentence": "The board members reached a unanimous agreement to appoint the new director.",
+        "sentenceKo": "이사회 멤버들은 신임 이사를 임명하는 것에 만장일치의 합의에 도달했다.",
+        "grammarNote": "unanimous는 '만장일치의, 의견이 같은'이라는 형용사로, 주로 합의(agreement), 투표(vote), 지원(support) 등의 명사와 어울려 쓰입니다."
+    },
+    "vendor": {
+        "sentence": "We need to compare price quotes from different vendors before purchasing the equipment.",
+        "sentenceKo": "장비를 구매하기 전에 여러 판매업체의 견적서를 비교해야 한다.",
+        "grammarNote": "vendor는 '판매 회사, 상인'이라는 명사로, supplier(공급업체)나 merchant(상인)와 결합하여 물품 계약 지문에서 단골로 쓰이는 단어입니다."
+    },
+    "warranty": {
+        "sentence": "The manufacturer offers a one-year warranty on all electronic appliances.",
+        "sentenceKo": "제조업체는 모든 가전제품에 대해 1년의 품질 보증서를 제공한다.",
+        "grammarNote": "warranty는 '보증, 품질 보증서'라는 뜻의 명사로, 주로 'under warranty' (보증 기간 내에 있는) 또는 'extended warranty' (연장 보증) 등의 콜로케이션으로 빈출됩니다."
+    },
+    "supervision": {
+        "sentence": "All construction tasks must be completed under the direct supervision of the chief engineer.",
+        "sentenceKo": "모든 건설 작업은 수석 엔지니어의 직접적인 감독 하에 완료되어야 한다.",
+        "grammarNote": "supervision은 '감독, 관리'라는 뜻의 명사로, 주로 'under the supervision of' (~의 감독 하에)라는 숙어 패턴으로 단골 출제되는 비즈니스 어휘입니다."
+    },
+    "feature": {
+        "sentence": "The new smartphone model boasts a unique security feature that utilizes facial recognition.",
+        "sentenceKo": "새 스마트폰 모델은 얼굴 인식을 활용하는 독특한 보안 기능을 자랑한다.",
+        "grammarNote": "feature는 명사로 '특징, 특색' 외에도 동사로 '특별히 포함하다, 특집으로 다루다'라는 뜻이 있어 품사 구분이 아주 중요합니다."
+    },
+    "inventory": {
+        "sentence": "The store manager conducted a physical count to update the inventory records.",
+        "sentenceKo": "매장 매니저는 재고 기록을 업데이트하기 위해 실제 실사 조사를 수행했다.",
+        "grammarNote": "inventory는 '재고, 재고 목록'이라는 뜻의 대표적인 비즈니스 명사입니다. 'take inventory'는 '재고 조사를 하다'라는 중요 숙어로 출제됩니다."
+    },
+    "acquire": {
+        "sentence": "The conglomerate aims to acquire the small technology startup to expand its market share.",
+        "sentenceKo": "그 대기업은 시장 점유율을 확장하기 위해 소규모 기술 스타트업을 인수하는 것을 목표로 한다.",
+        "grammarNote": "acquire는 기업 간 인수합병(M&A) 지문에서 '인수하다'라는 타동사로 매우 빈출됩니다. 명사형은 acquisition(인수, 획득)입니다."
+    },
+    "designated": {
+        "sentence": "Please park your vehicle only in the designated areas to avoid being fined.",
+        "sentenceKo": "벌금을 물지 않으려면 지정된 구역에만 차량을 주차해 주십시오.",
+        "grammarNote": "designated는 동사 designate(지정하다)의 과거분사형 형용사로, 구역(areas), 주차 공간(parking spaces) 등의 명사 수식 문제로 자주 출제됩니다."
+    },
+    "precaution": {
+        "sentence": "As a safety precaution, all construction workers must wear protective headgear.",
+        "sentenceKo": "안전 예방 조치로서 모든 건설 노동자들은 보호용 헬멧을 착용해야 한다.",
+        "grammarNote": "precaution은 주로 'take precautions' (예방 조치를 취하다) 또는 'safety precautions' (안전 예방 조치)라는 복수 콜로케이션으로 빈출됩니다."
+    },
+    "unprecedented": {
+        "sentence": "The company experienced unprecedented growth in online sales during the second quarter.",
+        "sentenceKo": "그 회사는 2분기 동안 온라인 매출에서 전례 없는 성장을 경험했다.",
+        "grammarNote": "unprecedented는 '전례 없는, 사상 초유의'라는 뜻의 고급 형용사로 growth, success, demand 등과 결합하여 출제됩니다."
+    },
+    "anticipate": {
+        "sentence": "Analysts anticipate that interest rates will remain stable for the next fiscal year.",
+        "sentenceKo": "분석가들은 다음 회계연도 동안 금리가 안정세를 유지할 것으로 예상한다.",
+        "grammarNote": "anticipate는 타동사로서 주로 that절을 목적어로 취하며, expect나 predict와 유사한 출제 맥락을 가집니다."
+    },
+    "reluctant": {
+        "sentence": "Board members were reluctant to invest in the risky venture without further analysis.",
+        "sentenceKo": "이사회 멤버들은 추가 분석 없이 위험한 벤처에 투자하기를 꺼렸다.",
+        "grammarNote": "reluctant는 'be reluctant to + 동사원형' (~하기를 꺼리다) 패턴으로 출제되는 단골 형용사입니다. 유의어로는 hesitant가 있습니다."
+    },
+    "collaborate": {
+        "sentence": "Researchers from both institutions will collaborate on the new medical study.",
+        "sentenceKo": "양 기관의 연구원들이 새로운 의학 연구에 협력할 것이다.",
+        "grammarNote": "collaborate는 자동사이므로 'collaborate on 주제' (~에 대해 협력하다), 'collaborate with 대상' (~와 협력하다) 전치사 결합 문제가 출제됩니다."
+    },
+    "provisional": {
+        "sentence": "The provisional schedule for the international conference is subject to change.",
+        "sentenceKo": "국제 회의의 잠정적인 일정은 변경될 수 있다.",
+        "grammarNote": "provisional은 temporary와 유의어로, provisional agreement(잠정 합의), provisional schedule(잠정 일정) 등으로 출제됩니다."
+    },
+    "substantially": {
+        "sentence": "Operating costs decreased substantially after the company upgraded its equipment.",
+        "sentenceKo": "회사가 장비를 업그레이드한 후 운영 비용이 상당히 감소했다.",
+        "grammarNote": "substantially는 증감 동사(increase, decrease, fall, rise)를 수식하는 중요 부사로, significantly, dramatically 등과 유의어입니다."
+    },
+    "meticulous": {
+        "sentence": "The accounting firm is known for its meticulous attention to financial details.",
+        "sentenceKo": "그 회계법인은 재무 세부사항에 대한 꼼꼼한 주의로 잘 알려져 있다.",
+        "grammarNote": "meticulous는 'meticulous attention to' (~에 대한 세심한 주의) 형태로 자주 출제되며, 매우 꼼꼼한 성격이나 철저한 검수를 나타낼 때 쓰입니다."
+    },
+    "commence": {
+        "sentence": "The construction of the new office building is scheduled to commence in July.",
+        "sentenceKo": "신축 사옥 건설은 7월에 시작될 예정이다.",
+        "grammarNote": "commence는 begin 이나 start 의 비즈니스 공식 표현으로, 자동사와 타동사 모두 가능합니다. 명사형은 commencement(시작, 졸업식)입니다."
+    },
+    "adversely": {
+        "sentence": "The profits of the airline were adversely affected by the sudden rise in fuel prices.",
+        "sentenceKo": "그 항공사의 수익은 연료 가격의 갑작스러운 상승으로 인해 부정적인 영향을 받았다.",
+        "grammarNote": "adversely는 주로 수동태와 결합하여 'be adversely affected by' (~에 의해 부정적 영향을 받다)의 덩어리 수식 문제로 빈출됩니다."
+    },
+    "stringent": {
+        "sentence": "The local government enforced stringent safety standards for all building projects.",
+        "sentenceKo": "지방 정부는 모든 빌딩 프로젝트에 대해 엄격한 안전 기준을 집행했다.",
+        "grammarNote": "stringent는 strict나 rigorous와 유의어로, 규정(rules, regulations), 검사(inspection), 기준(standards) 등을 엄격하게 집행할 때 쓰입니다."
+    },
+    "expedite": {
+        "sentence": "Customers can pay an extra fee to expedite the shipping of their orders.",
+        "sentenceKo": "고객들은 주문 상품의 배송을 신속히 처리하기 위해 추가 요금을 지불할 수 있다.",
+        "grammarNote": "expedite는 비즈니스 거래나 주문 처리 지문에서 'process quickly'의 뜻으로 빈출되는 고급 타동사입니다."
+    },
+    "lucrative": {
+        "sentence": "The consulting firm secured a lucrative contract with a multinational corporation.",
+        "sentenceKo": "그 컨설팅 회사는 다국적 기업과 수익성이 좋은 계약을 따냈다.",
+        "grammarNote": "lucrative는 '돈벌이가 잘 되는'이라는 뜻으로, contract(계약), business(사업), market(시장) 등과 단골 매치됩니다."
+    },
+    "jeopardize": {
+        "sentence": "A budget deficit could jeopardize the development of the new product line.",
+        "sentenceKo": "예산 적자는 신제품 라인의 개발을 위태롭게 할 수 있다.",
+        "grammarNote": "jeopardize는 위험에 빠뜨리다(endanger)의 비즈니스적 표현으로 출제 빈도가 높습니다."
+    },
+    "confidentiality": {
+        "sentence": "All employees must sign a confidentiality agreement before accessing sensitive data.",
+        "sentenceKo": "모든 직원들은 민감한 데이터에 접근하기 전에 비밀 유지 합의서에 서명해야 한다.",
+        "grammarNote": "confidentiality는 'confidentiality agreement' (비밀유지 계약)라는 복합명사 자격 혹은 명사형 구분 문제로 출제됩니다."
+    },
+    "redundant": {
+        "sentence": "The merger made several administrative positions redundant.",
+        "sentenceKo": "그 합병으로 인해 몇몇 행정 직책이 중복되어 불필요해졌다.",
+        "grammarNote": "redundant는 비즈니스 구조 조정 지문에서 '불필요한, 남는' 혹은 '해고된'의 의미로 출제됩니다."
+    },
+    "reception": {
+        "sentence": "The hotel reception is located on the ground floor next to the elevator.",
+        "sentenceKo": "호텔 접수처는 1층 엘리베이터 옆에 위치해 있다.",
+        "grammarNote": "reception은 '접수처, 프런트'라는 장소적 의미 외에도 '환영회, 리셉션'이라는 사교 행사 의미로도 토익에 빈출됩니다."
+    },
+    "inspect": {
+        "sentence": "Safety inspectors will inspect the manufacturing plant to ensure full compliance.",
+        "sentenceKo": "안전 검사관들이 완벽한 준수를 보장하기 위해 제조 공장을 검사할 것이다.",
+        "grammarNote": "inspect는 '검사하다, 점검하다'라는 동사로, 명사형은 inspection(검사, 점검), 사람 명사형은 inspector(검사관)입니다."
+    },
+    "exclusively": {
+        "sentence": "The VIP lounge is exclusively reserved for first-class passengers.",
+        "sentenceKo": "VIP 라운지는 오직 일등석 승객들만을 위해 독점적으로 예약되어 있다.",
+        "grammarNote": "exclusively는 '독점적으로, 오직(solely)'의 뜻으로 부사 어휘 문제로 자주 정답이 됩니다."
+    },
+    "comprehensive": {
+        "sentence": "The training manual offers a comprehensive overview of our software systems.",
+        "sentenceKo": "교육 매뉴얼은 당사 소프트웨어 시스템에 대한 종합적인 개요를 제공한다.",
+        "grammarNote": "comprehensive는 '포괄적인, 종합적인'이라는 뜻의 단골 형용사입니다. 명사 comprehension(이해력)과 형태를 구분해야 합니다."
+    },
+    "outstanding": {
+        "sentence": "Employees with outstanding performance will be considered for a promotion.",
+        "sentenceKo": "우수한 성과를 낸 직원들이 승진 대상자로 고려될 것이다.",
+        "grammarNote": "outstanding is '뛰어난, 우수한'이라는 뜻 외에 '미지불된, 미결제된(unpaid)'의 뜻으로 회계 및 대금 청구 지문에 빈출됩니다."
+    },
+    "preliminary": {
+        "sentence": "The committee released the preliminary findings of the market research.",
+        "sentenceKo": "위원회는 시장 조사의 예비 조사 결과를 발표했다.",
+        "grammarNote": "preliminary는 '예비의, 준비 단계의'라는 형용사로, preliminary results/findings(예비 결과) 등의 콜로케이션으로 쓰입니다."
+    },
+    "reputable": {
+        "sentence": "We recommend buying office equipment only from reputable suppliers.",
+        "sentenceKo": "평판이 좋은 공급업체로부터만 사무 장비를 구매할 것을 권장합니다.",
+        "grammarNote": "reputable은 명사 reputation(평판)에서 유래한 형용사로, '평판이 좋은, 유명한'의 뜻을 지닙니다."
+    },
+    "deteriorate": {
+        "sentence": "The weather conditions are expected to deteriorate further over the weekend.",
+        "sentenceKo": "기상 조건이 주말 동안 더 악화될 것으로 예상된다.",
+        "grammarNote": "deteriorate는 '악화되다, 나빠지다'라는 뜻의 자동사로, 기후나 건강, 시장 상황이 나빠질 때 쓰입니다."
+    },
+    "unanimously": {
+        "sentence": "The city council unanimously voted to approve the new public transit budget.",
+        "sentenceKo": "시 의회는 새로운 대중교통 예산을 만장일치로 승인하기로 투표했다.",
+        "grammarNote": "unanimously는 형용사 unanimous(만장일치의)에서 파생된 부사로, 의사결정 투표 지문에서 동사(vote, approve 등)를 수식합니다."
+    },
+    "delinquent": {
+        "sentence": "The bank sends reminder notices to clients with delinquent accounts.",
+        "sentenceKo": "은행은 연체 계좌가 있는 고객들에게 알림 통지서를 보낸다.",
+        "grammarNote": "delinquent는 세금이나 요금, 대출 상환 등이 '연체된, 체납된(overdue)'의 뜻으로 금융 분야에 빈출됩니다."
+    }
+}
+
+VOCAB_TEMPLATES = {
+    "verb": [
+        {
+            "sentence": "The committee decided to {term} the new policy starting next business quarter.",
+            "sentenceKo": "위원회는 다음 비즈니스 분기부터 새로운 정책을 {meaning}하기로 결정했다."
+        },
+        {
+            "sentence": "Please {term} the document carefully before submitting it to the executive board.",
+            "sentenceKo": "이사회에 제출하기 전에 문서를 주의 깊게 {meaning}하십시오."
+        },
+        {
+            "sentence": "The corporation hopes to {term} its retail operations in the European market.",
+            "sentenceKo": "기업은 유럽 시장에서 소매 운영을 {meaning}하기를 희망한다."
+        }
+    ],
+    "adjective": [
+        {
+            "sentence": "All staff members must provide {term} updates on their project status.",
+            "sentenceKo": "모든 직원들은 그들의 프로젝트 상태에 대해 {meaning} 업데이트를 제공해야 한다."
+        },
+        {
+            "sentence": "The manager requested a {term} analysis of the quarterly marketing results.",
+            "sentenceKo": "관리자는 분기별 마케팅 결과에 대한 {meaning} 분석을 요청했다."
+        },
+        {
+            "sentence": "Our developers are working hard to find a {term} solution to the software error.",
+            "sentenceKo": "우리 개발자들은 소프트웨어 오류에 대한 {meaning} 해결책을 찾기 위해 열심히 노력하고 있다."
+        }
+    ],
+    "adverb": [
+        {
+            "sentence": "The technical team resolved the server connection issues {term} after the meeting.",
+            "sentenceKo": "기술 팀은 회의 직후 서버 연결 문제를 {meaning} 해결했다."
+        },
+        {
+            "sentence": "The new guidelines on business trips were {term} approved by the financial director.",
+            "sentenceKo": "출장에 관한 새로운 가이드라인이 재무 이사에 의해 {meaning} 승인되었다."
+        },
+        {
+            "sentence": "Please review the safety guidelines {term} before operating the new machinery.",
+            "sentenceKo": "새로운 기계를 가동하기 전에 안전 가이드라인을 {meaning} 검토하시기 바랍니다."
+        }
+    ],
+    # 일반 명사 (사물 및 추상 개념)
+    "noun-thing": [
+        {
+            "sentence": "Please send the completed {term} to the administration office as soon as possible.",
+            "sentenceKo": "완성된 {meaning}{particle} 가능한 한 빨리 행정실로 보내주시기 바랍니다."
+        },
+        {
+            "sentence": "The board members had a brief discussion about the proposed {term} last night.",
+            "sentenceKo": "이사회 멤버들은 어젯밤 제안된 {meaning}에 대해 짧은 논의를 거쳤다."
+        },
+        {
+            "sentence": "The management implements a new system to optimize the overall {term}.",
+            "sentenceKo": "경영진은 전반적인 {meaning}{particle} 최적화하기 위해 새로운 시스템을 도입한다."
+        }
+    ],
+    # 사람 명사 (행위자, 직책)
+    "noun-person": [
+        {
+            "sentence": "The agency hired a highly qualified {term} to manage the public relations campaign.",
+            "sentenceKo": "대행사는 홍보 캠페인을 관리할 자격 있는 {meaning}{particle} 고용했다."
+        },
+        {
+            "sentence": "Each {term} is requested to submit their credentials to the manager by Friday.",
+            "sentenceKo": "각 {meaning}은(는) 금요일까지 관리자에게 자격 증명서를 제출할 것이 요구된다."
+        },
+        {
+            "sentence": "A designated {term} will guide the visitors through the research facility.",
+            "sentenceKo": "지정된 {meaning}{particle} 연구 시설로 방문객들을 안내할 것이다."
+        }
+    ],
+    "noun": [
+        {
+            "sentence": "Please send the completed {term} to the administration office as soon as possible.",
+            "sentenceKo": "완성된 {meaning}{particle} 가능한 한 빨리 행정실로 보내주시기 바랍니다."
+        }
+    ],
+    "adverbial-phrase": [
+        {
+            "sentence": "All personnel are required to work {term} to complete the product launch on schedule.",
+            "sentenceKo": "모든 직원들은 신제품 출시를 예정대로 완료하기 위해 {meaning} 일해야 한다."
+        },
+        {
+            "sentence": "The time table for the training seminar has been revised {term} due to scheduling conflicts.",
+            "sentenceKo": "일정 충돌로 인해 교육 세미나 시간표가 {meaning} 변경되었다."
+        },
+        {
+            "sentence": "Please note that database backups must be completed {term} to prevent any data loss.",
+            "sentenceKo": "데이터 손실을 방지하기 위해 데이터베이스 백업은 {meaning} 수행되어야 함에 유의하십시오."
+        }
+    ],
+    "verb-phrase": [
+        {
+            "sentence": "The public relations department plans to {term} before the end of this month.",
+            "sentenceKo": "홍보 부서는 이번 달 말 전에 {meaning}할 계획이다."
+        },
+        {
+            "sentence": "Staff members are expected to {term} to maintain a highly productive work environment.",
+            "sentenceKo": "직원들은 매우 생산적인 근무 환경을 유지하기 위해 {meaning}할 것으로 기대된다."
+        },
+        {
+            "sentence": "The president hopes that our department will {term} for the development of new programs.",
+            "sentenceKo": "사장은 우리 부서가 새로운 프로그램 개발을 위해 {meaning}하기를 바란다."
+        }
+    ]
+}
+
+
+def numbered_vocab_note(entry: dict, direction: str, choices: list[str], entries: list[dict]) -> str:
     term = entry["term"]
     answer = entry["answer"]
-    meanings = " / ".join(dict.fromkeys(entry.get("meanings") or [answer]))
-    if direction == "term":
-        return (
-            f"어휘 해설 | '{answer}'에 해당하는 원본 단어장 표제어는 {term}입니다.\n"
-            f"원본 뜻 | {meanings}\n"
-            "오답 포인트 | 뜻을 보고 단어를 고를 때는 비슷한 한국어 의미보다 영어 철자와 품사를 함께 떠올리는 것이 중요합니다."
-        )
-    return (
-        f"어휘 해설 | {term}의 대표 뜻은 '{answer}'입니다.\n"
-        f"원본 뜻 | {meanings}\n"
-        "오답 포인트 | 보기 중 단어와 바로 연결되는 뜻을 고르세요. 비슷한 뜻이 보여도 품사와 실제 사용 문맥이 맞는지 확인해야 합니다."
-    )
+    meanings_list = entry.get("meanings") or [answer]
+    usage = infer_usage_from_meaning(term, answer)
+    return build_vocab_explanation(term, answer, meanings_list, direction, choices, entries, usage)
+
+
+def stable_choices_by_usage(answer: str, usage: str, entries: list[dict], pool_key: str, seed: str) -> list[str]:
+    # 1단계: 동일 품사(usage)를 가졌으면서 다른 단어인 것들을 오답 풀로 채택
+    same_usage_pool = []
+    for entry in entries:
+        entry_term = entry["term"]
+        entry_answer = entry["answer"]
+        entry_usage = infer_usage_from_meaning(entry_term, entry_answer)
+        if entry_usage == usage:
+            val = entry["answer"] if pool_key == "answer" else entry["term"]
+            if val != answer and val not in same_usage_pool:
+                same_usage_pool.append(val)
+                
+    # 2단계: 품사 일치 오답 풀이 부족한 경우를 위해 전체 단어 풀도 확보
+    all_pool = []
+    for entry in entries:
+        val = entry["answer"] if pool_key == "answer" else entry["term"]
+        if val != answer and val not in all_pool:
+            all_pool.append(val)
+            
+    # 3단계: 품사 일치 오답을 먼저 쓰고 모자라면 전체 풀에서 채움
+    final_pool = same_usage_pool
+    for val in all_pool:
+        if len(final_pool) >= 40:
+            break
+        if val not in final_pool:
+            final_pool.append(val)
+            
+    # 4단계: 해시 시드를 이용해 오답 3개 무작위 선출 (중복/유사 의미 방지 적용)
+    start = int(hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8], 16) if final_pool else 0
+    distractors = []
+    index = start
+    attempts = 0
+    max_attempts = len(final_pool) * 2
+    while final_pool and len(distractors) < 3 and attempts < max_attempts:
+        candidate = final_pool[index % len(final_pool)]
+        attempts += 1
+        index += 29 # 해시 기반 분산 점프
+        if candidate in distractors:
+            continue
+        if contains_korean(answer) or contains_korean(candidate):
+            if is_overlapping(candidate, answer) or any(is_overlapping(candidate, d) for d in distractors):
+                continue
+        distractors.append(candidate)
+        
+    if len(distractors) < 3:
+        for candidate in final_pool:
+            if len(distractors) >= 3:
+                break
+            if candidate not in distractors and candidate != answer:
+                distractors.append(candidate)
+        
+    choices = [answer] + distractors
+    choices.sort()
+    return choices
 
 
 def build_numbered_vocab_items() -> list[dict]:
     entries = load_numbered_vocab_entries()
-    meanings = [entry["answer"] for entry in entries]
-    terms = [entry["term"] for entry in entries]
     items: list[dict] = []
 
     for entry in entries:
@@ -992,8 +1593,50 @@ def build_numbered_vocab_items() -> list[dict]:
             "vocabNumber": number,
         }
 
+        # 품사 판정 및 문맥/문장 생성
+        usage = infer_usage_from_meaning(term, answer)
+        
+        # 기본값 (사전 매핑되지 않았을 때의 템플릿 사용)
+        has_smart = term.lower() in SMART_VOCAB_REGISTRY
+        if has_smart:
+            smart = SMART_VOCAB_REGISTRY[term.lower()]
+            meaning_sentence = smart["sentence"]
+            meaning_sentence_ko = smart["sentenceKo"]
+            custom_note = smart["grammarNote"]
+        else:
+            if usage == "noun":
+                # 사람 명사 여부 판정
+                is_person = False
+                person_suffixes = ("er", "or", "ist", "ant", "ent", "ee", "representative", "executive", "expert", "professional", "specialist", "officer", "secretary", "director")
+                person_meanings = ("사람", "원", "가", "관", "자", "생", "주", "의사", "강사", "변호사", "직원", "임원", "지원자", "대표", "감독")
+                if term.lower().endswith(person_suffixes) or any(word in answer for word in person_meanings):
+                    is_person = True
+                templates = VOCAB_TEMPLATES["noun-person"] if is_person else VOCAB_TEMPLATES["noun-thing"]
+            else:
+                templates = VOCAB_TEMPLATES.get(usage, VOCAB_TEMPLATES["noun"])
+                
+            template = templates[number % len(templates)]
+            
+            # 단어 치환 및 명사일 때 을/를 조사 붙이기
+            meaning_sentence = template["sentence"].replace("{term}", term)
+            meaning_sentence_ko = template["sentenceKo"].replace("{meaning}", answer).replace("{particle}", korean_particle(answer))
+            custom_note = f"품사 분류 | {usage.upper()}\n" + (
+                "동사 어휘는 행동이나 주어의 동작을 설명합니다." if usage == "verb" else
+                "형용사는 명사의 상태와 성질을 묘사합니다." if usage == "adjective" else
+                "부사는 문장 요소나 동작의 정도/방식을 수식합니다." if usage == "adverb" else
+                "명사구 및 명사는 문장에서 주어나 목적어 자리에 옵니다."
+            )
+
         meaning_id = f"numbered-vocab-meaning-{number:04d}-{stable_id(term, answer)}"
-        meaning_choices = stable_choices(answer, meanings, meaning_id)
+        meaning_choices = stable_choices_by_usage(answer, usage, entries, "answer", meaning_id)
+        
+        # 뜻 맞추기 문제용 빈칸 만들기
+        blank_meaning_sentence = meaning_sentence.replace(term, "_____", 1)
+        # 만약 대소문자 문제로 치환 안됐을 때를 대비한 2차 치환
+        if "_____" not in blank_meaning_sentence:
+            blank_meaning_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+
+        # 1. 단어 뜻 맞추기 문제 (meaning)
         items.append({
             **base,
             "id": meaning_id,
@@ -1002,15 +1645,21 @@ def build_numbered_vocab_items() -> list[dict]:
             "answer": answer,
             "choices": meaning_choices,
             "answerIndex": meaning_choices.index(answer),
-            "sentence": term,
-            "sentenceKo": f"{term}: {answer}",
-            "blankSentence": f"{term} = _____",
-            "grammarNote": numbered_vocab_note(entry, "meaning"),
+            "sentence": meaning_sentence,
+            "sentenceKo": meaning_sentence_ko,
+            "blankSentence": blank_meaning_sentence,
+            "grammarNote": f"{numbered_vocab_note(entry, 'meaning', meaning_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
             "prompt": f"{number}번 단어 {term}의 뜻은?",
         })
 
+        # 2. 뜻에 해당하는 영어 단어 맞추기 문제 (term)
         term_id = f"numbered-vocab-term-{number:04d}-{stable_id(answer, term)}"
-        term_choices = stable_choices(term, terms, term_id)
+        term_choices = stable_choices_by_usage(term, usage, entries, "term", term_id)
+        
+        blank_term_sentence = meaning_sentence.replace(term, "_____", 1)
+        if "_____" not in blank_term_sentence:
+            blank_term_sentence = re.sub(re.escape(term), "_____", meaning_sentence, count=1, flags=re.IGNORECASE)
+
         items.append({
             **base,
             "id": term_id,
@@ -1019,11 +1668,30 @@ def build_numbered_vocab_items() -> list[dict]:
             "answer": term,
             "choices": term_choices,
             "answerIndex": term_choices.index(term),
-            "sentence": answer,
-            "sentenceKo": f"{answer}: {term}",
-            "blankSentence": f"{answer} = _____",
-            "grammarNote": numbered_vocab_note(entry, "term"),
+            "sentence": meaning_sentence,
+            "sentenceKo": meaning_sentence_ko,
+            "blankSentence": blank_term_sentence,
+            "grammarNote": f"{numbered_vocab_note(entry, 'term', term_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
             "prompt": f"'{answer}'에 해당하는 영어 단어는?",
+        })
+
+        # 3. 영문장 속 빈칸 단어 채우기 문제 (Part 5 실전형 - word)
+        word_id = f"numbered-vocab-word-{number:04d}-{stable_id(term, answer)}"
+        word_choices = stable_choices_by_usage(term, usage, entries, "term", word_id)
+        
+        items.append({
+            **base,
+            "id": word_id,
+            "questionType": "word",
+            "contextId": f"numbered-vocab-{number:04d}",
+            "answer": term,
+            "choices": word_choices,
+            "answerIndex": word_choices.index(term),
+            "sentence": meaning_sentence,
+            "sentenceKo": meaning_sentence_ko,
+            "blankSentence": blank_term_sentence,
+            "grammarNote": f"{numbered_vocab_note(entry, 'meaning', word_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
+            "prompt": "문맥상 빈칸에 들어갈 가장 알맞은 영단어는?",
         })
 
     return items
@@ -1076,7 +1744,7 @@ def build_vocab_items() -> list[dict]:
             "sentenceKo": f"{term}: {answer}",
             "blankSentence": f"{term} = _____",
             "grammarFocus": "vocabulary-meaning",
-            "grammarNote": vocab_grammar_note(term, answer, str(item.get("usage", ""))),
+            "grammarNote": vocab_grammar_note(term, answer, str(item.get("usage", "")), choices, vocab_entries),
             "prompt": f"원본 어휘 자료에서 {term}의 뜻은?",
         })
     return items

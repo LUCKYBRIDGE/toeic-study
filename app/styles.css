@@ -1,18 +1,18 @@
 :root {
   color-scheme: light;
-  --bg: #f6f4ee;
+  --bg: #f8fafc;
   --panel: #ffffff;
-  --ink: #18212f;
-  --muted: #6e7480;
-  --line: #d8d4ca;
-  --blue: #2454a6;
-  --green: #1f7a5c;
-  --amber: #b56a14;
-  --red: #b43a31;
-  --soft-blue: #e8eefb;
-  --soft-green: #e4f3ed;
-  --soft-amber: #fbefd7;
-  --shadow: 0 18px 36px rgba(24, 33, 47, 0.08);
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --blue: #2563eb;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --soft-blue: #eff6ff;
+  --soft-green: #ecfdf5;
+  --soft-amber: #fef3c7;
+  --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
 }
 
 * {
@@ -1082,3 +1082,834 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================
+   TOEIC Study App - UI/UX Improvements
+   ========================================== */
+
+/* Streak Widget in Sidebar */
+.streak-widget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--soft-amber) 0%, #fde68a 100%);
+  border: 1px solid #fcd34d;
+  margin-top: 8px;
+  box-shadow: 0 4px 6px -1px rgba(251, 191, 36, 0.1);
+}
+
+.streak-fire {
+  font-size: 24px;
+  animation: fire-glow 1.5s infinite alternate;
+}
+
+.streak-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.streak-label {
+  font-size: 11px;
+  color: #92400e;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.streak-info strong {
+  font-size: 16px;
+  color: #78350f;
+  font-weight: 800;
+}
+
+@keyframes fire-glow {
+  from {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4));
+  }
+  to {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
+  }
+}
+
+/* Daily Goal Setting in Home View */
+.daily-goal-setting {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.goal-select {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.goal-select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Smart Progress Bar in Question Card */
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--soft-blue);
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  margin-bottom: 16px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.progress-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.progress-bar-wrap {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue) 0%, #60a5fa 100%);
+  width: 0%;
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Success Card for Daily Goal Completion */
+.success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 32px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--soft-green) 0%, var(--panel) 100%);
+  border: 1px solid #a7f3d0;
+  box-shadow: var(--shadow);
+  margin-top: 24px;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.success-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: success-bounce 1s infinite alternate ease-in-out;
+}
+
+.success-card h2 {
+  font-size: 26px;
+  color: #065f46;
+  margin: 0 0 10px 0;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.success-card p {
+  color: #047857;
+  margin: 0 0 28px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.success-stats {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 36px;
+  background: var(--panel);
+  padding: 20px 36px;
+  border-radius: 14px;
+  border: 1px solid #d1fae5;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+.success-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.success-stat span {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.success-stat strong {
+  font-size: 22px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.success-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.success-actions button {
+  min-width: 130px;
+}
+
+@keyframes success-bounce {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-12px) scale(1.05);
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Streak Calendar in Stats View */
+.streak-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  max-width: 280px;
+  margin: 16px 0 8px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.calendar-day.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: #047857;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.calendar-day.today {
+  border: 2px solid var(--blue);
+  color: var(--blue);
+}
+
+.calendar-day.active.today {
+  color: white;
+  border: 2px solid #047857;
+}
+
+.calendar-day.future {
+  opacity: 0.3;
+  background: #f1f5f9;
+  border-style: dashed;
+}
+
+/* Micro-interaction animations */
+.choice-button {
+  transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+}
+
+.choice-button:active {
+  transform: scale(0.98);
+}
+
+.choice-button.correct {
+  animation: answer-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.question-card.shake-card {
+  animation: card-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes answer-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes card-shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Apps Script 마이그레이션 연동 스타일 */
+.sync-loader {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 10000;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sync-loader.hidden {
+  opacity: 0;
+  transform: translateY(-15px);
+  pointer-events: none;
+}
+
+.sync-loader .spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.user-account {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 3px 8px;
+  border-radius: 999px;
+  width: fit-content;
+  border: 1px solid var(--line);
+}
+
+.user-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.user-email {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.gas-status-banner {
+  background: linear-gradient(90deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1px solid #a7f3d0;
+  padding: 14px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+  animation: slideUpFade 0.5s ease-out;
+}
+
+.gas-status-banner p {
+  margin: 0;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* CSS 기반 가상 전체화면 (iframe 대응용) */
+.app-shell.virtual-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: var(--bg);
+  border-radius: 0;
+  margin: 0;
+  max-width: none;
+}
+
+/* 퀴즈 힌트 스타일 */
+.hint-container {
+  margin: 10px 0 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hint-toggle-btn {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hint-toggle-btn:hover {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+.hint-content-panel {
+  width: 100%;
+  background: #fefaf0;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #78350f;
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+  animation: slideDownFade 0.3s ease-out;
+}
+
+/* 정답 패널 내 다의어 사전 카드 */
+.vocab-dictionary-container {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.vocab-dictionary-container h4 {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vocab-dict-list {
+  display: grid;
+  gap: 10px;
+}
+
+.vocab-dict-card {
+  background: #fbf9f4;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+
+.vocab-dict-card.current-item {
+  border-left: 4px solid var(--amber);
+  background: #fffdf9;
+}
+
+.vocab-dict-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.vocab-dict-meaning {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.vocab-dict-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.vocab-dict-badge.badge-current {
+  background: var(--amber);
+  color: #fff;
+}
+
+.vocab-dict-badge.badge-other {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.vocab-dict-sentence {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.4;
+  margin: 0 0 4px;
+  font-family: inherit;
+}
+
+.vocab-dict-sentence-ko {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* 단어 상세 조회용 Native Dialog 모달 */
+.word-detail-dialog {
+  border: none;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 520px;
+  width: 90%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: var(--panel);
+  overflow: hidden;
+  animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.word-detail-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.word-detail-dialog .dialog-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.word-detail-dialog .dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fbf9f4;
+}
+
+.word-detail-dialog .dialog-header h2 {
+  font-size: 20px;
+  font-weight: 850;
+  margin: 0;
+  color: var(--ink);
+}
+
+.word-detail-dialog .dialog-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.word-detail-dialog .dialog-close-btn:hover {
+  color: var(--ink);
+}
+
+.word-detail-dialog .dialog-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.dialog-section-title {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dialog-meanings-badge-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.dialog-meaning-badge {
+  background: #f1ede4;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.dialog-sentence-card {
+  background: #fdfdfb;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.dialog-sentence-card p {
+  margin: 0;
+}
+
+.dialog-sentence-card .en {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 4px;
+}
+
+.dialog-sentence-card .ko {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.dialog-sentence-card .note {
+  font-size: 12px;
+  color: #7c2d12;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* 약점 테이블 클릭 유도 커서 */
+#weakTable tr {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+#weakTable tr:hover {
+  background-color: #faf8f5;
+}
+
+/* 현재 어휘 라벨 클릭 가능 표시 */
+.panel-header #currentTerm {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: color 0.2s;
+}
+
+.panel-header #currentTerm:hover {
+  color: var(--amber);
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideDownFade {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 프리미엄 해설 스터디 카드 테마 */
+.explanation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.exp-card {
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  border: 1px solid transparent;
+}
+
+.exp-card .card-header {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.exp-card .card-body {
+  color: var(--ink);
+}
+
+.exp-card .list-item {
+  margin-bottom: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+}
+
+/* 주요 뜻: 초록 */
+.exp-card.primary-meaning {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.exp-card.primary-meaning .card-header {
+  color: #047857;
+}
+
+/* 보조 뜻: 파랑 */
+.exp-card.secondary-meaning {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+.exp-card.secondary-meaning .card-header {
+  color: #1d4ed8;
+}
+
+/* 해설: 보라 */
+.exp-card.explanation {
+  background-color: #faf5ff;
+  border-color: #e9d5ff;
+  color: #581c87;
+}
+.exp-card.explanation .card-header {
+  color: #6b21a8;
+}
+
+/* 오답 분석: 빨강 */
+.exp-card.wrong-analysis {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+.exp-card.wrong-analysis .card-header {
+  color: #b91c1c;
+}
+.exp-card.wrong-analysis .list-item {
+  border-left-color: #fca5a5;
+}
+
+/* 토익 비법: 노랑/주황 */
+.exp-card.toeic-tip {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.exp-card.toeic-tip .card-header {
+  color: #b45309;
+}
+
+/* 실전 적용 문맥: 청록 */
+.exp-card.context-tip {
+  background-color: #f0fdfa;
+  border-color: #99f6e4;
+  color: #115e59;
+}
+.exp-card.context-tip .card-header {
+  color: #0f766e;
+}
+
+/* 일반 텍스트 및 가독성 개선 */
+.general-text {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 로컬 구동 안내 가이드 카드 */
+.local-guide-card {
+  margin-top: 24px;
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 18px 24px;
+  color: var(--ink);
+}
+
+.local-guide-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #1e3a8a;
+  font-size: 15px;
+}
+
+.local-guide-card p {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.local-guide-card ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.local-guide-card li {
+  margin-bottom: 6px;
+}
+
+

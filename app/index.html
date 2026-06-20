@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <!-- 구글 시트 동기화 로더 -->
+    <div id="syncLoader" class="sync-loader hidden">
+      <div class="spinner"></div>
+      <span class="sync-text">구글 스프레드시트 동기화 중...</span>
+    </div>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
@@ -14,10 +20,22 @@
           <div class="brand-copy">
             <h1>TOEIC Context Vocab</h1>
             <p id="dataStatus">자료 확인 중</p>
+            <div id="userAccount" class="user-account hidden">
+              <span class="user-dot"></span>
+              <span id="userEmail" class="user-email"></span>
+            </div>
           </div>
           <button class="icon-button fullscreen-button" id="fullscreenButton" type="button" title="전체화면" aria-label="전체화면" aria-pressed="false">
             <span id="fullscreenIcon" aria-hidden="true">⛶</span>
           </button>
+        </div>
+
+        <div class="streak-widget" id="streakWidget">
+          <span class="streak-fire">🔥</span>
+          <div class="streak-info">
+            <span class="streak-label">연속 학습</span>
+            <strong id="streakCount">0일째</strong>
+          </div>
         </div>
 
         <nav class="nav-tabs" aria-label="보기">
@@ -74,6 +92,15 @@
                   <span>학습 준비</span>
                   <h2>오늘 풀 문제를 고르세요</h2>
                   <p id="homeSummary">자료를 불러오는 중입니다.</p>
+                  <div class="daily-goal-setting">
+                    <label for="dailyGoalSelect">🎯 오늘 목표 학습량:</label>
+                    <select id="dailyGoalSelect" class="goal-select">
+                      <option value="10">10문제</option>
+                      <option value="20">20문제</option>
+                      <option value="30" selected>30문제 (추천)</option>
+                      <option value="50">50문제</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="home-actions">
                   <button class="primary-button" type="button" data-start-mode="mixed" data-start-type="all">오늘 학습 시작</button>
@@ -107,6 +134,15 @@
               </div>
 
               <article id="questionCard" class="question-card">
+                <div class="progress-container">
+                  <div class="progress-header">
+                    <span class="progress-title">오늘의 목표 진도</span>
+                    <span class="progress-text" id="progressText">0 / 30</span>
+                  </div>
+                  <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                  </div>
+                </div>
                 <div class="question-meta">
                   <span id="questionSource">source</span>
                   <span id="questionTags">tag</span>
@@ -114,6 +150,10 @@
                 </div>
                 <p class="sentence" id="questionSentence"></p>
                 <p class="prompt" id="questionPrompt"></p>
+                <div class="hint-container">
+                  <button type="button" id="hintToggleButton" class="hint-toggle-btn">💡 힌트 보기</button>
+                  <div id="hintContentPanel" class="hint-content-panel hidden"></div>
+                </div>
                 <div class="choices" id="choices"></div>
                 <div class="answer-panel hidden" id="answerPanel">
                   <div>
@@ -123,14 +163,39 @@
                   <p id="sentenceKo"></p>
                   <p id="blankSentence"></p>
                   <p id="grammarNote"></p>
+                  <div id="vocabDictionaryContainer" class="vocab-dictionary-container"></div>
                   <div class="self-check">
                     <button class="secondary-button" id="unsureButton">맞혔지만 헷갈림</button>
                     <button class="secondary-button" id="flagButton">복습 체크</button>
                   </div>
                 </div>
-                <div class="question-actions">
+                 <div class="question-actions">
                   <button class="secondary-button" id="skipButton">나중에</button>
                   <button class="primary-button" id="nextButton">다음</button>
+                </div>
+              </article>
+
+              <article id="successCard" class="success-card hidden">
+                <div class="success-icon">🎉</div>
+                <h2>오늘의 학습 목표 달성!</h2>
+                <p>훌륭합니다! 오늘의 학습 목표 분량을 완수했습니다.</p>
+                <div class="success-stats">
+                  <div class="success-stat">
+                    <span>푼 문제</span>
+                    <strong id="successSolved">0</strong>
+                  </div>
+                  <div class="success-stat">
+                    <span>오늘 정답률</span>
+                    <strong id="successAccuracy">0%</strong>
+                  </div>
+                  <div class="success-stat">
+                    <span>현재 스트릭</span>
+                    <strong id="successStreak">0일</strong>
+                  </div>
+                </div>
+                <div class="success-actions">
+                  <button class="primary-button" id="successHomeButton">홈으로</button>
+                  <button class="secondary-button" id="successContinueButton">더 풀기</button>
                 </div>
               </article>
             </section>
@@ -218,6 +283,10 @@
               <p>문제당 풀이 시간</p>
             </div>
             <div class="stat-panel wide">
+              <h2>최근 학습 달력 (스트릭)</h2>
+              <div id="streakCalendar" class="streak-calendar"></div>
+            </div>
+            <div class="stat-panel wide">
               <h2>태그별 오답</h2>
               <div id="tagBars" class="tag-bars"></div>
             </div>
@@ -225,18 +294,31 @@
         </section>
 
         <section class="view" id="view-data">
+          <!-- 구글 연동 안내 배너 (비활성화) -->
+          <!-- 
+          <div id="gasStatusBanner" class="gas-status-banner hidden">
+            <p>☁️ 현재 <strong>구글 스프레드시트 연동 모드</strong>로 구동 중입니다. 모든 학습 내역은 본인의 구글 스프레드시트에 자동 동기화됩니다.</p>
+          </div>
+          -->
+
           <div class="data-grid">
             <div class="data-panel">
               <h2>학습 데이터</h2>
               <p id="datasetSummary">불러온 데이터 없음</p>
-              <label class="file-button">
-                study-items.json 가져오기
+              <label class="file-button" id="localDatasetLabel">
+                study-items.approved.json 가져오기
                 <input id="datasetInput" type="file" accept="application/json,.json" />
               </label>
+              <!-- 
+              <label class="file-button primary hidden" id="gasDatasetLabel">
+                ☁️ 구글 시트에 단어 업로드 (.json)
+                <input id="gasDatasetInput" type="file" accept="application/json,.json" />
+              </label>
+              -->
               <button class="secondary-button" id="exportDatasetButton">현재 데이터 내보내기</button>
             </div>
             <div class="data-panel">
-              <h2>학습 기록</h2>
+              <h2>학습 기록 (진도)</h2>
               <p id="progressSummary">기록 없음</p>
               <div class="button-row">
                 <button class="secondary-button" id="exportProgressButton">기록 내보내기</button>
@@ -248,9 +330,33 @@
               <button class="danger-button" id="resetProgressButton">기록 초기화</button>
             </div>
           </div>
+
+          <!-- 로컬 구동 안내 및 백업 가이드 -->
+          <div class="local-guide-card">
+            <h3>💡 세계 탑 토익 강사의 로컬 학습 가이드</h3>
+            <p>본 웹앱은 사용자의 개인 정보 보호와 딜레이 없는 학습을 위해 <strong>순수 로컬 브라우저 저장소(IndexedDB / LocalStorage)</strong>로 작동합니다.</p>
+            <ul>
+              <li><strong>데이터 보존</strong>: 학습하신 내역과 오답 이력은 사용하시는 브라우저 캐시에만 보존됩니다. 브라우저 캐시를 청소할 경우 초기화될 수 있습니다.</li>
+              <li><strong>기기 간 진도 이동</strong>: 집PC에서 풀던 기록을 모바일이나 회사 노트북으로 옮기려면 <strong>[기록 내보내기]</strong>를 눌러 백업 파일(<code>json</code>)을 저장한 후, 새 기기에서 <strong>[기록 가져오기]</strong>로 불러오시면 안전하게 이어 풀 수 있습니다!</li>
+              <li><strong>명품 문제셋 로드</strong>: 새로 가공된 4,486개 고품질 문제를 가져오려면 왼쪽의 <strong>[study-items.approved.json 가져오기]</strong> 버튼을 통해 로컬의 <code>private-data/generated/study-items.approved.json</code> 파일을 선택하여 업로드하십시오.</li>
+            </ul>
+          </div>
         </section>
       </main>
     </div>
+
+    <!-- 단어 마스터 상세 조회 모달 -->
+    <dialog id="wordDetailDialog" class="word-detail-dialog">
+      <div class="dialog-content">
+        <header class="dialog-header">
+          <h2 id="dialogWordTitle">단어명</h2>
+          <button type="button" class="dialog-close-btn" id="dialogCloseButton" aria-label="닫기">×</button>
+        </header>
+        <div class="dialog-body" id="dialogWordBody">
+          <!-- 단어 상세 뜻, 예문 목록 등이 동적으로 렌더링됨 -->
+        </div>
+      </div>
+    </dialog>
 
     <script src="./app.js?v=20260619-main-start"></script>
   </body>
