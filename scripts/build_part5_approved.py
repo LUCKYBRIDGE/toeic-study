@@ -742,13 +742,12 @@ def build_vocab_explanation(
     usage: str
 ) -> str:
     secondary_meanings = [m for m in meanings_list if m != answer]
-    meanings_str = " / ".join(dict.fromkeys(meanings_list))
-    sec_str = ", ".join(dict.fromkeys(secondary_meanings)) if secondary_meanings else "없음"
-    
-    header = (
-        f"🎯 **주요 뜻** | {answer}\n"
-        f"📚 **보조 뜻** | {sec_str}\n\n"
-    )
+    if secondary_meanings:
+        sec_str = ", ".join(dict.fromkeys(secondary_meanings))
+        header = f"📖 **어휘 의미** | **{answer}** (기타 의미: {sec_str})\n\n"
+    else:
+        header = f"📖 **어휘 의미** | **{answer}**\n\n"
+
     
     if direction == "meaning":
         letter = "ABCD"[choices.index(answer)] if answer in choices else "?"
@@ -2234,9 +2233,9 @@ def build_grammar_core_items() -> list[dict]:
         
         # 일타강사 전용 해설 포맷팅
         grammar_note_text = (
-            f"🎯 **주요 뜻** | {qtype.upper()} 문법\n"
-            f"📚 **보조 뜻** | 없음\n\n"
-            f"어휘 해설 | {raw['reason']} 따라서 정답은 ({answer_letter(choices, answer)}) 입니다.\n\n"
+            f"🏷️ **문법 분류** | {qtype.upper()} 문법\n\n"
+            f"문제 해설 | {raw['reason']} 따라서 정답은 ({answer_letter(choices, answer)}) 입니다.\n\n"
+
             f"오답 분석 |\n"
             f"- **{choices[0]}** : {'정답' if choices[0] == answer else raw['wrongs']}\n"
             f"- **{choices[1]}** : {'정답' if choices[1] == answer else raw['wrongs']}\n"
