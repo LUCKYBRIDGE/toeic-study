@@ -1690,7 +1690,7 @@ def build_numbered_vocab_items() -> list[dict]:
             "sentence": meaning_sentence,
             "sentenceKo": meaning_sentence_ko,
             "blankSentence": blank_term_sentence,
-            "grammarNote": f"{numbered_vocab_note(entry, 'meaning', word_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
+            "grammarNote": f"{numbered_vocab_note(entry, 'word', word_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
             "prompt": "문맥상 빈칸에 들어갈 가장 알맞은 영단어는?",
         })
 
