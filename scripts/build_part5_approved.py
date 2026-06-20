@@ -1852,6 +1852,450 @@ def build_official_sample_items() -> list[dict]:
     )
 
 
+def build_grammar_core_items() -> list[dict]:
+    raw_data = [
+        # === 1. 접속사 (Conjunction) ===
+        {
+            "num": 1,
+            "type": "conjunction",
+            "term": "Although",
+            "sentence": "Although the marketing campaign was highly successful, sales did not meet the quarterly projections.",
+            "sentenceKo": "마케팅 캠페인은 대단히 성공적이었지만, 매출은 분기 예상을 충족시키지 못했다.",
+            "blankSentence": "_____ the marketing campaign was highly successful, sales did not meet the quarterly projections.",
+            "choices": ["Although", "Despite", "However", "Moreover"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "빈칸 뒤에 주어(the marketing campaign)와 동사(was)가 있는 완전한 절이 오고, 두 절의 양보/대조 관계를 연결해야 하므로 부사절 접속사가 와야 합니다.",
+            "wrongs": "Despite는 전치사라 뒤에 명사구가 와야 하고, However와 Moreover는 접속부사라 두 절을 직접 쉼표로 연결하지 못합니다.",
+            "tip": "Although(접속사) vs Despite(전치사)의 절/명사구 구분법은 매달 출제되는 토익 핵심 출제 1순위 포인트입니다."
+        },
+        {
+            "num": 2,
+            "type": "conjunction",
+            "term": "unless",
+            "sentence": "The conference attendees will not receive their certificates unless they submit the feedback form by Friday.",
+            "sentenceKo": "컨퍼런스 참가자들은 금요일까지 피드백 양식을 제출하지 않으면 수료증을 받지 못할 것이다.",
+            "blankSentence": "The conference attendees will not receive their certificates _____ they submit the feedback form by Friday.",
+            "choices": ["if", "unless", "without", "except"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "문맥상 '~하지 않으면 수료증을 받지 못한다'는 부정이 함축된 조건의 뜻이 되어야 하므로 조건 접속사 unless가 정답입니다.",
+            "wrongs": "if를 넣으면 '제출하면 받지 못한다'가 되어 논리상 모순이며, without과 except는 뒤에 명사구가 와야 하는 전치사입니다.",
+            "tip": "unless는 'if not'의 축약으로, 주절의 부정어(will not receive)와 호응하여 부정적 조건을 완성하는 경우가 많습니다."
+        },
+        {
+            "num": 3,
+            "type": "conjunction",
+            "term": "so that",
+            "sentence": "The department manager redesigned the work schedules so that employees could manage their tasks more efficiently.",
+            "sentenceKo": "부서장은 직원들이 업무를 더 효율적으로 관리할 수 있도록 근무 일정을 재조정했다.",
+            "blankSentence": "The department manager redesigned the work schedules _____ employees could manage their tasks more efficiently.",
+            "choices": ["in order to", "so that", "because of", "rather than"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "빈칸 뒤에 절(employees could manage...)이 이어지며, 부서장이 일정을 조정한 '목적(~할 수 있도록)'을 연결해주는 부사절 접속사 so that이 필요합니다.",
+            "wrongs": "in order to는 목적의 뜻이지만 뒤에 동사원형이 와야 하고, because of와 rather than은 전치사이므로 뒤에 절이 오지 못합니다.",
+            "tip": "so that 뒤에는 조동사(can, could, may, might)가 동반되어 목적 의미를 부각시키는 경향이 큽니다."
+        },
+        {
+            "num": 4,
+            "type": "conjunction",
+            "term": "Once",
+            "sentence": "Once the contract is signed by both parties, we will begin the initial phase of the construction project.",
+            "sentenceKo": "양측이 계약서에 서명하면 즉시, 우리는 건설 프로젝트의 초기 단계를 시작할 것이다.",
+            "blankSentence": "_____ the contract is signed by both parties, we will begin the initial phase of the construction project.",
+            "choices": ["Once", "While", "Already", "During"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "서명 완료 직후 건설을 시작한다는 시간적 선후 관계('일단 ~하면, ~하자마자')를 뜻하는 접속사 Once가 필요합니다.",
+            "wrongs": "While은 행동의 동시성을 나타내어 어색하고, During은 전치사, Already는 단독 부사라 절을 연결할 수 없습니다.",
+            "tip": "Once가 시간 부사절 접속사로 쓰일 때는 절의 동사가 현재시제(is signed)로 미래시를 대용하고, 주절에 미래시(will begin)가 옵니다."
+        },
+        {
+            "num": 5,
+            "type": "conjunction",
+            "term": "While",
+            "sentence": "While Ms. Chen was out of the office on business, her assistant handled all urgent inquiries.",
+            "sentenceKo": "Ms. Chen 씨가 출장으로 사무실을 비운 동안, 그녀의 조수가 모든 긴급한 문의 사항들을 처리했다.",
+            "blankSentence": "_____ Ms. Chen was out of the office on business, her assistant handled all urgent inquiries.",
+            "choices": ["During", "While", "Meanwhile", "Besides"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "Ms. Chen이 자리를 비운 사건과 조수가 문의를 처리한 사건이 동시에 진행됨('~하는 동안')을 나타내는 접속사 While이 필요합니다.",
+            "wrongs": "During은 전치사라 뒤에 명사구가 와야 하며, Meanwhile은 부사이고, Besides는 전치사/부사로 문맥상 부적절합니다.",
+            "tip": "While은 접속사로서 뒤에 'S+V'를, During은 전치사로서 뒤에 특정 기간을 나타내는 '명사구'를 동반합니다."
+        },
+        {
+            "num": 6,
+            "type": "conjunction",
+            "term": "whether",
+            "sentence": "The human resources director will decide whether the internship program should be extended next year.",
+            "sentenceKo": "인사 이사는 내년에 인턴십 프로그램을 연장할지 여부를 결정할 것이다.",
+            "blankSentence": "The human resources director will decide _____ the internship program should be extended next year.",
+            "choices": ["if", "whether", "that", "what"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "decide 동사의 목적어 역할을 하는 명사절 자리이며, 내용상 '연장할지 아닐지 여부'를 뜻하므로 whether가 가장 어울립니다.",
+            "wrongs": "if도 명사절을 이끌 수 있으나, 문장 맨 뒤에 'or not'이 생략된 형태의 명시적 선택 구조나 격식체 목적어절에는 whether가 압도적으로 우선합니다.",
+            "tip": "whether 명사절은 주어, 목적어, 보어 자리 및 전치사의 목적어 자리에도 올 수 있는 반면, 명사절 if는 전치사 뒤나 주어 자리에는 올 수 없습니다."
+        },
+        {
+            "num": 7,
+            "type": "conjunction",
+            "term": "so",
+            "sentence": "The printer was out of order, so the administrative assistant had to use the one in the lobby.",
+            "sentenceKo": "프린터가 고장 나서, 행정 조수는 로비에 있는 프린터를 사용해야만 했다.",
+            "blankSentence": "The printer was out of order, _____ the administrative assistant had to use the one in the lobby.",
+            "choices": ["because", "so", "although", "but"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "프린터가 고장 난 것이 원인이고 로비 프린터를 사용한 것이 결과이므로, 쉼표(,) 뒤에서 순접의 인과관계를 만드는 등위접속사 so가 정답입니다.",
+            "wrongs": "because를 넣으면 인과관계가 반대로 꼬이게 되고, although와 but은 의미상 대조 관계라 적절하지 않습니다.",
+            "tip": "등위접속사 so는 앞절의 결과를 이어주는 구문으로만 쓰이며, 종속접속사와 달리 문장 맨 앞으로 갈 수 없습니다."
+        },
+        {
+            "num": 8,
+            "type": "conjunction",
+            "term": "Since",
+            "sentence": "Since the corporate server will be offline for maintenance, all employees should work locally.",
+            "sentenceKo": "회사 서버가 점검을 위해 오프라인 상태가 될 것이기 때문에, 모든 직원들은 로컬로 작업해야 한다.",
+            "blankSentence": "_____ the corporate server will be offline for maintenance, all employees should work locally.",
+            "choices": ["Due to", "Since", "Therefore", "Furthermore"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "문장 처음에 위치하여 뒤의 원인 부사절(server will be offline...)과 주절의 결과를 이어주는 접속사 Since(~때문에)가 와야 합니다.",
+            "wrongs": "Due to는 전치사이므로 절을 이끌 수 없으며, Therefore와 Furthermore는 접속부사로 단독 쉼표 수식만 가능합니다.",
+            "tip": "Since는 '이래로(시간)'뿐만 아니라 '때문에(이유)'라는 뜻으로 토익 Part 5에서 because/as의 동의어로 아주 자주 출제됩니다."
+        },
+        {
+            "num": 9,
+            "type": "conjunction",
+            "term": "either",
+            "sentence": "Clients can choose to pay either by credit card or through bank transfer.",
+            "sentenceKo": "고객들은 신용카드로 결제하거나 은행 송금을 통해 결제하는 것 중 하나를 선택할 수 있다.",
+            "blankSentence": "Clients can choose to pay _____ by credit card or through bank transfer.",
+            "choices": ["neither", "both", "either", "not only"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "빈칸 뒤의 상관 전치사구 or와 짝을 이루어 'A 또는 B 중 하나'를 완성하는 상관접속사 either가 정답입니다.",
+            "wrongs": "both는 and, neither는 nor, not only는 but also와 함께 결합해야 하므로 뒤의 or와 짝이 맞지 않습니다.",
+            "tip": "상관접속사 문제(both A and B, either A or B, neither A nor B)는 빈칸 뒤의 대구 형태(or/nor/and)를 보고 0.5초 만에 푸는 팁이 있습니다."
+        },
+        {
+            "num": 10,
+            "type": "conjunction",
+            "term": "As soon as",
+            "sentence": "As soon as the laboratory results are available, the research team will publish their final report.",
+            "sentenceKo": "실험 결과가 나오는 대로 즉시, 연구팀은 최종 보고서를 발표할 것이다.",
+            "blankSentence": "_____ the laboratory results are available, the research team will publish their final report.",
+            "choices": ["As soon as", "Shortly", "Upon", "Immediate"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 접속사는?",
+            "reason": "빈칸 뒤의 주어와 동사를 갖춘 부사절을 이끌면서 '~하자마자, ~하는 대로 즉시'의 의미를 더해주는 접속사 As soon as가 정답입니다.",
+            "wrongs": "Upon은 뒤에 명사(구)가 와야 하는 전치사이며, Shortly는 부사, Immediate는 형용사입니다.",
+            "tip": "As soon as는 3단어로 이루어진 부사절 접속사로, 'Upon -ing'나 'On -ing' 전치사 구문과 같은 의미를 나타냅니다."
+        },
+        # === 2. 전치사 (Preposition) ===
+        {
+            "num": 11,
+            "type": "preposition",
+            "term": "within",
+            "sentence": "All division managers must submit their annual budget requests within the next three weeks.",
+            "sentenceKo": "모든 부서장들은 향후 3주 이내에 연간 예산 요청서를 제출해야 한다.",
+            "blankSentence": "All division managers must submit their annual budget requests _____ the next three weeks.",
+            "choices": ["within", "during", "by", "until"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "빈칸 뒤에 '향후 3주'라는 시간적 범위(기간)가 오고, '3주 이내에' 완료해야 하는 한계를 나타내므로 within이 정답입니다.",
+            "wrongs": "by와 until은 특정 시점(금요일, 다음 주 등) 앞에 오며, during은 특정 사건/행사 기간(휴가, 회의 등) 앞에 와서 수치 기간과 어울리지 않습니다.",
+            "tip": "within은 수치 기간(3 weeks, 10 days)과 가장 친한 전치사로 '기간 이내에' 완료됨을 나타냅니다."
+        },
+        {
+            "num": 12,
+            "type": "preposition",
+            "term": "due to",
+            "sentence": "The flight was delayed due to severe weather conditions at the departing airport.",
+            "sentenceKo": "출발 공항의 악천후 때문에 비행기가 지연되었다.",
+            "blankSentence": "The flight was delayed _____ severe weather conditions at the departing airport.",
+            "choices": ["because", "due to", "owing", "thanks"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "빈칸 뒤에 명사구가 오고, 비행기 지연의 '이유(~ 때문에)'를 이끌어주는 전치사가 필요하므로 due to가 정답입니다.",
+            "wrongs": "because는 접속사라 뒤에 절이 와야 하고, owing과 thanks는 뒤에 to가 누락되어 단독 전치사 역할을 하지 못합니다.",
+            "tip": "because of, due to, owing to, on account of는 모두 명사구 앞에서 이유를 나타내는 필수 전치사 4인방입니다."
+        },
+        {
+            "num": 13,
+            "type": "preposition",
+            "term": "Despite",
+            "sentence": "Despite the steep rise in production costs, the company decided not to increase the retail prices.",
+            "sentenceKo": "생산 비용의 급격한 상승에도 불구하고, 회사는 소비자가를 인상하지 않기로 결정했다.",
+            "blankSentence": "_____ the steep rise in production costs, the company decided not to increase the retail prices.",
+            "choices": ["Although", "Despite", "Whereas", "However"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "빈칸 뒤 명사구(the steep rise...) 앞에서 두 절의 모순적인 양보 관계('~에도 불구하고')를 맺어주는 전치사 Despite가 필요합니다.",
+            "wrongs": "Although와 Whereas는 절을 이끄는 양보 접속사이며, However는 부사이므로 명사구 앞에 오지 못합니다.",
+            "tip": "Despite와 in spite of는 전치사이고, Although, even though, though는 접속사라는 사실을 구분하는 문제는 거의 매회 출제됩니다."
+        },
+        {
+            "num": 14,
+            "type": "preposition",
+            "term": "since",
+            "sentence": "Mr. Garcia has served as the chief executive officer since the company’s restructuring in 2022.",
+            "sentenceKo": "Garcia 씨는 2022년 회사의 구조조정 이후로 최고경영자(CEO)로 재직해 오고 있다.",
+            "blankSentence": "Mr. Garcia has served as the chief executive officer _____ the company’s restructuring in 2022.",
+            "choices": ["for", "during", "since", "from"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "주절의 시제가 현재완료(has served)이므로, 과거의 기점(restructuring) 이후 현재까지 계속을 나타내는 전치사 since가 정답입니다.",
+            "wrongs": "for는 숫자를 포함한 기간, during은 사건 기간 앞에 오며, from은 현재완료의 짝으로 기간 시점을 구체적으로 잡지 못합니다.",
+            "tip": "주절에 'have/has p.p.'가 있고 빈칸 뒤에 과거 시점 명사나 과거 동사절이 오면 100% since가 정답입니다."
+        },
+        {
+            "num": 15,
+            "type": "preposition",
+            "term": "for",
+            "sentence": "The new employee handbook is now available for download on the company intranet.",
+            "sentenceKo": "새로운 직원 핸드북은 이제 회사 인트라넷에서 다운로드할 수 있다.",
+            "blankSentence": "The new employee handbook is now available _____ download on the company intranet.",
+            "choices": ["to", "for", "about", "by"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "available 형용사 뒤에서 용도나 목적을 수식하여 '다운로드를 위해 사용 가능함'이라는 의미를 완성해주는 전치사 for가 필요합니다.",
+            "wrongs": "to는 명사 download와 바로 결합할 경우 방향성이나 대상이 어색하고, by는 행위자나 수단을 수식하므로 문맥에 맞지 않습니다.",
+            "tip": "be available for + 명사 / be available to + 동사원형 패턴을 숙지하면 품사에 따른 전치사 선택이 매끄러워집니다."
+        },
+        {
+            "num": 16,
+            "type": "preposition",
+            "term": "throughout",
+            "sentence": "The safety procedures are strictly enforced throughout all manufacturing facilities.",
+            "sentenceKo": "모든 제조 시설 전역에서 안전 절차가 엄격하게 준수된다.",
+            "blankSentence": "The safety procedures are strictly enforced _____ all manufacturing facilities.",
+            "choices": ["throughout", "between", "against", "under"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "빈칸 뒤 명사구가 공간 전체를 의미하며, '곳곳에, 전역에'의 뉘앙스를 완성해주는 전치사 throughout가 정답입니다.",
+            "wrongs": "between은 둘 사이에 오며, against는 ~에 대항하여, under는 ~ 아래에/영향 아래에라는 뜻입니다.",
+            "tip": "throughout는 공간(전역에)과 시간(내내)에 모두 쓰여 '전체'를 강조하는 유용한 전치사입니다."
+        },
+        {
+            "num": 17,
+            "type": "preposition",
+            "term": "In addition to",
+            "sentence": "In addition to his regular duties, Mr. Patel coordinates the monthly training workshops.",
+            "sentenceKo": "정규 업무 외에도, Patel 씨는 매월 열리는 교육 워크숍을 조율한다.",
+            "blankSentence": "_____ his regular duties, Mr. Patel coordinates the monthly training workshops.",
+            "choices": ["Except", "Besides", "In addition to", "Apart"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "원래 담당하는 정규 업무에 더하여 워크숍 조율이라는 또 다른 업무를 추가한다는 문맥이므로 'In addition to'가 정답입니다.",
+            "wrongs": "Except는 제외 의미이며, Apart는 뒤에 from이 붙어야 전치사가 되고, Besides는 단독으로 쓰이지만 이 문장의 정합성에선 In addition to가 정확합니다.",
+            "tip": "In addition to, besides, along with는 모두 기존 명사에 대상을 '추가'할 때 사용하는 빈출 전치사구입니다."
+        },
+        {
+            "num": 18,
+            "type": "preposition",
+            "term": "until",
+            "sentence": "The construction of the new research facility will be suspended until further notice.",
+            "sentenceKo": "새로운 연구 시설의 건설은 추후 통지가 있을 때까지 보류될 것이다.",
+            "blankSentence": "The construction of the new research facility will be suspended _____ further notice.",
+            "choices": ["by", "until", "within", "since"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "건설이 보류되는 상태가 추후 통지 기점까지 '계속 지속됨'을 의미하므로 계속 전치사 until이 정답입니다.",
+            "wrongs": "by는 일회성 제출/마감 시점에 쓰이며, within은 기간 이내, since는 과거 기점 이래로라는 뜻입니다.",
+            "tip": "until은 '동사 행동의 지속'(suspended, stay, wait)과 어울리고, by는 '일회성 완료'(submit, complete, deliver)와 어울립니다."
+        },
+        {
+            "num": 19,
+            "type": "preposition",
+            "term": "regardless of",
+            "sentence": "All requests for annual leave will be reviewed regardless of the employee's tenure.",
+            "sentenceKo": "모든 연차 휴가 요청은 직원의 근속 기간과 상관없이 검토될 것이다.",
+            "blankSentence": "All requests for annual leave will be reviewed _____ the employee's tenure.",
+            "choices": ["instead of", "regardless of", "due to", "in case of"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "근속 기간의 길고 짧음의 영향에서 제외하고 모두 동등하게 검토한다는 의미이므로 '~와 관계없이, 상관없이'를 뜻하는 regardless of가 정답입니다.",
+            "wrongs": "instead of는 ~ 대신에, due to는 ~ 때문에, in case of는 ~의 경우에 대비하여 라는 뜻입니다.",
+            "tip": "regardless of는 토익 파트 5/6에서 혜택, 조건, 절차 등과 관련해 매우 단골로 출제되는 전치사입니다."
+        },
+        {
+            "num": 20,
+            "type": "preposition",
+            "term": "with",
+            "sentence": "Please handle the fragile laboratory equipment with extreme care during the experiments.",
+            "sentenceKo": "실험 중에 깨지기 쉬운 실험 장비를 각별한 주의를 기울여 다루어 주십시오.",
+            "blankSentence": "Please handle the fragile laboratory equipment _____ extreme care during the experiments.",
+            "choices": ["by", "with", "in", "for"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 전치사는?",
+            "reason": "동사 handle을 수식하며 '어떤 태도/주의를 가지고서' 행동해야 하는지 나타내므로 명사 care와 결합하여 부사구(조심히)를 만드는 전치사 with가 정답입니다.",
+            "wrongs": "by는 행위 수단, in은 분야나 물리적 위치, for는 대상을 나타내므로 care와 짝이 맞지 않습니다.",
+            "tip": "with + 추상명사는 부사 역할을 합니다. 예: with care (조심히), with ease (쉽게), with efficiency (효율적으로)."
+        },
+        # === 3. 시제 및 동사 형태 (Tense) ===
+        {
+            "num": 21,
+            "type": "tense",
+            "term": "submits",
+            "sentence": "The supervisor will approve the travel reimbursement once the employee submits the original receipts.",
+            "sentenceKo": "직원이 영수증 원본을 제출하면 부서장이 출장비 환급을 승인할 것이다.",
+            "blankSentence": "The supervisor will approve the travel reimbursement once the employee _____ the original receipts.",
+            "choices": ["submits", "will submit", "submitted", "submitting"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "시간의 부사절을 이끄는 접속사 once 뒤에선 주절이 미래(will approve) 시제이더라도 부사절 내부는 현재시제 submits가 미래시를 대신합니다.",
+            "wrongs": "will submit은 부사절의 미래 시제 중복 금지 규칙에 위배되고, submitted는 과거시제, submitting은 완전한 동사형태가 아닙니다.",
+            "tip": "시간과 조건의 부사절(when, as soon as, if, once 등) 안에서는 미래의 일일지라도 현재시제가 미래시제를 반드시 대신합니다."
+        },
+        {
+            "num": 22,
+            "type": "tense",
+            "term": "announced",
+            "sentence": "The board of directors announced a major merger with a European telecommunications firm yesterday.",
+            "sentenceKo": "이사회는 어제 유럽 이동통신사와의 대규모 합병을 발표했다.",
+            "blankSentence": "The board of directors _____ a major merger with a European telecommunications firm yesterday.",
+            "choices": ["announces", "announced", "will announce", "has announced"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "문장 끝에 명확한 과거의 단서인 'yesterday'(어제)가 존재하므로 단순 과거형 동사인 announced가 정답입니다.",
+            "wrongs": "announces는 현재시제, will announce는 미래시제이고, 현재완료(has announced)는 명확한 과거 단서 부사와 섞여 쓰일 수 없습니다.",
+            "tip": "과거를 가리키는 부사(yesterday, ago, last year, in + 과거연도)는 현재완료(have p.p.) 시제와 절대 함께 쓰이지 않고 단순과거와 함께 쓰입니다."
+        },
+        {
+            "num": 23,
+            "type": "tense",
+            "term": "was completed",
+            "sentence": "The renovation of the main lobby was completed ahead of schedule, to the delight of the clients.",
+            "sentenceKo": "메인 로비의 리모델링은 예정보다 일찍 완료되어 고객들의 기쁨을 자아냈다.",
+            "blankSentence": "The renovation of the main lobby _____ ahead of schedule, to the delight of the clients.",
+            "choices": ["completed", "was completed", "completes", "is completing"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "주어(The renovation)는 완료 동작을 당하는 '사물'이며, 문맥상 이미 일어난 일이므로 과거 시점이면서 수동 구조를 가진 was completed가 정답입니다.",
+            "wrongs": "completed는 목적어가 없는 이 구조에서 능동이라 어색하며, completes와 is completing은 현재 능동이라 문법/의미가 맞지 않습니다.",
+            "tip": "토익 동사 문제에서 빈칸 바로 뒤에 목적어 명사구가 없고 부사구만 나열된다면 '수동태(be + p.p.)'가 정답일 확률이 매우 높습니다."
+        },
+        {
+            "num": 24,
+            "type": "tense",
+            "term": "be installed",
+            "sentence": "The safety officer requested that fire extinguishers be installed in every department room.",
+            "sentenceKo": "안전 요원은 모든 부서실에 소화기가 설치되어야 한다고 요구했다.",
+            "blankSentence": "The safety officer requested that fire extinguishers _____ in every department room.",
+            "choices": ["are installed", "be installed", "should have installed", "installed"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "제안/요구/요청 동사 request 뒤의 that절 내부에는 당위성 의미가 포함되어 `(should) + 동사원형` 구조가 오고, 소화기는 설치되는 것이므로 be installed가 정답입니다.",
+            "wrongs": "are installed는 are가 동사원형이 아니라서 탈락이며, installed만 쓰면 조동사 생략 후 남은 원형이 아닌 과거동사 형태라 올 수 없습니다.",
+            "tip": "suggest, recommend, request, insist, demand, order 등의 동사 뒤 that절의 동사 자리는 무조건 '동사원형' 혹은 'be'가 옵니다."
+        },
+        {
+            "num": 25,
+            "type": "tense",
+            "term": "Had we known",
+            "sentence": "Had we known about the scheduling conflict earlier, we would have adjusted the meeting time.",
+            "sentenceKo": "우리가 일정 조율 충돌에 대해 더 일찍 알았더라면, 회의 시간을 조정했을 텐데.",
+            "blankSentence": "_____ about the scheduling conflict earlier, we would have adjusted the meeting time.",
+            "choices": ["Did we know", "Had we known", "If we know", "Were we known"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "주절의 'would have adjusted'를 통해 가정법 과거완료 구문임을 알 수 있고, if가 생략되어 조동사가 앞으로 도치된 Had we known이 정답입니다.",
+            "wrongs": "Did we know는 일반 의문문 구조라 어색하고, If we know는 시제가 맞지 않으며, Were we known은 수동 형태라 목적어(about...) 관계가 풀리지 않습니다.",
+            "tip": "가정법 과거완료(if S + had p.p., S + would/could have p.p.)에서 if가 지워지면 주어-동사 위치가 바뀌어 'Had + 주어 + p.p.'가 됩니다."
+        },
+        {
+            "num": 26,
+            "type": "tense",
+            "term": "are being updated",
+            "sentence": "The customer database records are being updated to improve service speed currently.",
+            "sentenceKo": "현재 서비스 속도 향상을 위해 고객 데이터베이스 기록들이 업데이트되고 있다.",
+            "blankSentence": "The customer database records _____ to improve service speed currently.",
+            "choices": ["updates", "are updating", "are being updated", "have updated"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "주어 records(복수)가 업데이트를 당하는 대상이고, currently(현재) 부사와 호응하여 진행 중인 수동 행동을 나타내므로 진행 수동태인 are being updated가 정답입니다.",
+            "wrongs": "updates는 단수형이고 능동, are updating과 have updated는 복수형이지만 주어가 사람이 아닌 사물이므로 능동 수식이 불가합니다.",
+            "tip": "진행형 수동태는 'be + being + p.p.' 형태를 지니며, 지금 당장 진행되고 있는 수동 동작을 묘사할 때 씁니다."
+        },
+        {
+            "num": 27,
+            "type": "tense",
+            "term": "has been researching",
+            "sentence": "The chemical company has been researching new composite materials for the past five years.",
+            "sentenceKo": "그 화학 회사는 지난 5년 동안 새로운 복합 소재를 연구해 오고 있다.",
+            "blankSentence": "The chemical company _____ new composite materials for the past five years.",
+            "choices": ["researches", "has been researching", "researched", "is researching"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "기간을 뜻하는 부사구 'for the past five years'(지난 5년 동안)는 과거부터 현재까지의 동작의 연장을 지시하므로 현재완료 진행형(has been researching)이 정답입니다.",
+            "wrongs": "researches는 일반적 사실의 현재시제이고, researched는 과거완료가 아닌 단순 과거이며, is researching은 일시적 현재진행이라 긴 기간 연장을 표현하지 못합니다.",
+            "tip": "'for the past/last + 숫자'는 과거부터 지금까지 해오고 있음을 나타내어 주절에 '현재완료(has/have p.p.)' 혹은 '현재완료 진행형'을 동반합니다."
+        },
+        {
+            "num": 28,
+            "type": "tense",
+            "term": "will have finished",
+            "sentence": "By the time the new CEO arrives next week, the team will have finished the department transition.",
+            "sentenceKo": "다음 주 신임 CEO가 도착할 무렵에는, 팀은 부서 인수인계를 완료해 놓았을 것이다.",
+            "blankSentence": "By the time the new CEO arrives next week, the team _____ the department transition.",
+            "choices": ["finished", "will have finished", "has finished", "finishes"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "`By the time + 주어 + 현재동사`가 이끄는 조건 부사절은 미래의 특정 마감 기준을 뜻하고, 그 무렵에는 주절의 동작이 이미 끝났을 것이므로 미래완료(will have finished)가 정답입니다.",
+            "wrongs": "finished는 단순과거, has finished는 현재완료이며, finishes는 미래 마감 상황의 결과와 호응하지 않습니다.",
+            "tip": "'By the time S + 현재동사, S + will have p.p.'는 미래완료 시제의 가장 정형화된 토익 기출 공식입니다."
+        },
+        {
+            "num": 29,
+            "type": "tense",
+            "term": "to have been completed",
+            "sentence": "The structural inspection report appears to have been completed before the official audit started.",
+            "sentenceKo": "구조 점검 보고서는 공식 감사가 시작되기 전에 이미 작성 완료된 것처럼 보인다.",
+            "blankSentence": "The structural inspection report appears _____ before the official audit started.",
+            "choices": ["to complete", "to have been completed", "completing", "to be completed"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "본동사(appears: 현재)가 나타내는 시점보다 '이전의 일(공식 감사 시작 전)'이며 보고서가 '완료된 것'이므로, 완료형 수동 부정사 to have been completed가 적절합니다.",
+            "wrongs": "to complete와 completing은 능동형이며, to be completed는 본동사와 동일한 시점의 수동이라 이전 일어난 완료 사실을 나타내지 못합니다.",
+            "tip": "to부정사의 완료 시제는 'to have p.p.' 형태이며, 본동사의 시간보다 '한 시제 앞선 과거의 일'을 수식할 때 씁니다."
+        },
+        {
+            "num": 30,
+            "type": "tense",
+            "term": "Review",
+            "sentence": "Review the safety guidelines carefully before operating the heavy machinery.",
+            "sentenceKo": "중장비를 가동하기 전에 안전 지침을 주의 깊게 검토하십시오.",
+            "blankSentence": "_____ the safety guidelines carefully before operating the heavy machinery.",
+            "choices": ["Review", "Reviewing", "Reviewed", "To review"],
+            "prompt": "빈칸에 들어갈 가장 알맞은 동사 형태는?",
+            "reason": "쉼표 앞의 부사구/부사절과 함께 쓰이며 주어가 없이 문장이 처음 기동되고 있으므로, 명령을 이끄는 동사원형 Review가 정답입니다.",
+            "wrongs": "Reviewing은 분사구문으로 쓰일 수 있으나 뒤의 목적어 연결 후 문장의 주동사가 남지 않게 되어 비문이 되며, Reviewed/To review는 명령문을 이끌 수 없습니다.",
+            "tip": "문장 맨 앞 빈칸 뒤에 명사가 오고 쉼표 뒤에 본동사가 따로 없다면, 동사원형으로 시작하는 '명령문' 문제입니다."
+        }
+    ]
+
+    items = []
+    for raw in raw_data:
+        number = raw["num"]
+        qtype = raw["type"]
+        answer = raw["term"]
+        choices = raw["choices"]
+        sentence = raw["sentence"]
+        sentence_ko = raw["sentenceKo"]
+        blank_sentence = raw["blankSentence"]
+        
+        # 일타강사 전용 해설 포맷팅
+        grammar_note_text = (
+            f"🎯 **주요 뜻** | {qtype.upper()} 문법\n"
+            f"📚 **보조 뜻** | 없음\n\n"
+            f"어휘 해설 | {raw['reason']} 따라서 정답은 ({answer_letter(choices, answer)}) 입니다.\n\n"
+            f"오답 분석 |\n"
+            f"- **{choices[0]}** : {'정답' if choices[0] == answer else raw['wrongs']}\n"
+            f"- **{choices[1]}** : {'정답' if choices[1] == answer else raw['wrongs']}\n"
+            f"- **{choices[2]}** : {'정답' if choices[2] == answer else raw['wrongs']}\n"
+            f"- **{choices[3]}** : {'정답' if choices[3] == answer else raw['wrongs']}\n\n"
+            f"토익 포인트 | {raw['tip']}"
+        )
+        
+        items.append({
+            "id": f"grammar-core-{number:03d}-{stable_id(sentence, answer)}",
+            "questionType": qtype,
+            "term": answer,
+            "termKey": normalize_space(answer).lower(),
+            "contextId": f"grammar-core-{number:03d}",
+            "answer": answer,
+            "choices": choices,
+            "answerIndex": choices.index(answer),
+            "tags": ["rc", "part5", qtype],
+            "source": "Grammar Core (Grammar Master)",
+            "sourcePath": "scripts/build_part5_approved.py",
+            "quality": "approved",
+            "contextType": "sentence",
+            "sentence": sentence,
+            "sentenceKo": sentence_ko,
+            "blankSentence": blank_sentence,
+            "grammarFocus": qtype,
+            "grammarNote": grammar_note_text,
+            "prompt": raw["prompt"],
+        })
+    return items
+
+
 def build_items() -> list[dict]:
     items = []
     items.extend(build_numbered_vocab_items())
@@ -1876,6 +2320,7 @@ def build_items() -> list[dict]:
     ))
     items.extend(build_ybm_basic_part5_items())
     items.extend(build_official_sample_items())
+    items.extend(build_grammar_core_items())
     return items
 
 
