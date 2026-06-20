@@ -586,8 +586,9 @@ function renderVocabDictionary(currentItem) {
   container.className = "vocab-dictionary-wrapper";
 
   const title = document.createElement("h4");
-  title.innerHTML = "💡 이 단어의 다른 문맥 & 뜻 (주뜻/보조뜻)";
+  title.innerHTML = "💡 이 단어의 다른 출제 유형 및 쓰임새";
   container.appendChild(title);
+
 
   const list = document.createElement("div");
   list.className = "vocab-dict-list";

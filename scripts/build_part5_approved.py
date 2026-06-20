@@ -708,14 +708,15 @@ def part5_grammar_note(source_id: str, number: int, question_type: str, answer: 
 def vocab_tip(term: str, answer: str, usage: str) -> str:
     lower = term.lower()
     if " " in lower:
-        return f"{term}는 여러 단어가 한 의미 단위로 쓰이는 표현입니다. 문제에서는 단어별 직역보다 전체 뜻 '{answer}'로 빠르게 잡아야 합니다."
+        return f"💡 **일타강사 실전 팁** | {term}은(는) 여러 단어가 결합하여 하나의 의미 덩어리를 이루는 다어구(collocation)입니다. 쪼개서 개별 단어로 외우지 말고, 하나의 단어처럼 '{answer}'로 입에 붙여 암기하는 것이 실전에서 0.5초 만에 답을 고르는 지름길입니다!"
     if usage in {"verb", "verb-phrase"} or answer.endswith("하다") or "하다," in answer:
-        return f"{term}는 동사/동사 표현으로 출제될 가능성이 큽니다. 뒤에 어떤 목적어가 오는지 함께 외우면 Part 5 어휘 문제에서 도움이 됩니다."
+        return f"💡 **일타강사 실전 팁** | {term}은(는) 문맥 속에서 주어의 행동이나 비즈니스 업무 처리를 완성하는 핵심 동사입니다. 동사 어휘는 항상 빈칸 뒤에 오는 목적어(명사구) 혹은 짝이 되는 전치사(자동사+전치사 구조)와의 궁합을 확인하는 연습을 하세요!"
     if usage == "adverb" or answer.endswith(("게", "히")):
-        return f"{term}는 동사나 형용사를 꾸며 정도와 방식을 나타내는 부사로 자주 쓰입니다."
+        return f"💡 **일타강사 실전 팁** | {term}은(는) 문장의 동사나 형용사를 꾸며 의미를 더욱 풍부하게 만드는 수식어 부사입니다. 부사 문제는 수식 대상(주로 뒤의 p.p. 형태나 형용사, 동사)과의 자연스러운 번역 호응을 확인하는 것이 고득점의 비결입니다!"
     if usage == "adjective" or answer.endswith(("한", "적인", "있는", "없는")):
-        return f"{term}는 명사 앞에서 성질을 설명하는 형용사로 자주 출제됩니다."
-    return f"{term}는 토익 문서, 업무, 공지 문맥에서 명사로 자주 확인해야 하는 기본 어휘입니다."
+        return f"💡 **일타강사 실전 팁** | {term}은(는) 명사 앞에서 성질이나 상태를 묘사하는 형용사 어휘입니다. 형용사 문제는 꾸며주는 명사와의 어울림이 가장 중요하므로, 명사와 한 덩어리로 묶어서(콜로케이션) 입으로 낭독하며 감을 잡는 것이 제일 좋습니다!"
+    return f"💡 **일타강사 실전 팁** | {term}은(는) 파트 5/6의 대표적인 명사 어휘입니다. 명사 문제는 단어의 성질(사람/사물, 가산/불가산)과 빈칸 앞뒤의 동사/전치사 짝꿍을 맞춰 정답을 유추하는 것이 핵심 전략입니다!"
+
 
 
 def find_term_for_meaning(meaning: str, entries: list[dict]) -> str:
@@ -1586,6 +1587,9 @@ def build_numbered_vocab_items() -> list[dict]:
         term = entry["term"]
         answer = entry["answer"]
         tags = numbered_vocab_tags(number)
+        # 품사 판정
+        usage = infer_usage_from_meaning(term, answer)
+
         base = {
             "term": term,
             "termKey": normalize_space(term).lower(),
@@ -1593,14 +1597,11 @@ def build_numbered_vocab_items() -> list[dict]:
             "sourcePath": entry["sourcePath"],
             "quality": "approved",
             "contextType": "vocabulary",
-            "grammarFocus": "vocabulary",
+            "grammarFocus": usage,
             "tags": tags,
             "vocabNumber": number,
         }
 
-        # 품사 판정 및 문맥/문장 생성
-        usage = infer_usage_from_meaning(term, answer)
-        
         # 기본값 (사전 매핑되지 않았을 때의 템플릿 사용)
         has_smart = term.lower() in SMART_VOCAB_REGISTRY
         if has_smart:
@@ -1611,12 +1612,13 @@ def build_numbered_vocab_items() -> list[dict]:
         else:
             meaning_sentence = term
             meaning_sentence_ko = f"{term}: {answer}"
-            custom_note = f"품사 분류 | {usage.upper()}\n" + (
-                "동사 어휘는 행동이나 주어의 동작을 설명합니다." if usage == "verb" else
-                "형용사는 명사의 상태와 성질을 묘사합니다." if usage == "adjective" else
-                "부사는 문장 요소나 동작의 정도/방식을 수식합니다." if usage == "adverb" else
-                "명사구 및 명사는 문장에서 주어나 목적어 자리에 옵니다."
+            custom_note = (
+                "💡 **일타강사 실전 압축 팁** | 동사는 문장의 뼈대입니다. 동사 어휘 문제를 풀 때는 먼저 빈칸 뒤에 목적어(명사구)가 있는지를 보아 타동사인지 자동사인지 판별하고, 주어와의 수 일치 ➔ 수동/능동태 ➔ 단서 시제의 3단계 법칙을 적용하세요!" if usage in {"verb", "verb-phrase"} else
+                "💡 **일타강사 실전 압축 팁** | 형용사는 명사 바로 앞에서 수식하거나, be동사/keep/remain 등 2형식 동사 뒤 주격 보어 자리에서 출제됩니다. 분사형 형용사(e.g., -ing, -ed)와의 구분 및 짝이 되는 명사의 관계를 잡는 것이 득점 비결입니다!" if usage == "adjective" else
+                "💡 **일타강사 실전 압축 팁** | 부사는 문장에서 없어도 되는 수식 성분입니다. 주로 완벽한 절 앞뒤, be동사+p.p. 사이, 조동사+동사원형 사이 등 틈새 자리를 비집고 들어가 동작을 수식합니다. 동사/형용사/다른 부사 수식 짝꿍을 찾으세요!" if usage == "adverb" else
+                "💡 **일타강사 실전 압축 팁** | 명사는 문장의 주어, 목적어, 보어 자리뿐만 아니라 전치사의 목적어(전치사 뒤)와 명사+명사(복합명사) 형태의 출제가 잦습니다. 단어의 뜻과 함께 앞뒤 전치사와의 짝을 반드시 확인하세요!"
             )
+
 
         meaning_id = f"numbered-vocab-meaning-{number:04d}-{stable_id(term, answer)}"
         meaning_choices = stable_choices_by_usage(answer, usage, entries, "answer", meaning_id)
@@ -1705,6 +1707,10 @@ def build_vocab_items() -> list[dict]:
         item_id = f"vocab-{stable_id(source, term, answer)}"
         choices = stable_choices(answer, answers, item_id)
         tags = sorted((set(item.get("tags") or []) - {"approved"}) | {"vocabulary", "meaning"})
+        usage = item.get("usage")
+        if not usage or usage == "vocabulary":
+            usage = infer_usage_from_meaning(term, answer)
+
         items.append({
             "id": item_id,
             "questionType": "meaning",
@@ -1722,11 +1728,12 @@ def build_vocab_items() -> list[dict]:
             "sentence": term,
             "sentenceKo": f"{term}: {answer}",
             "blankSentence": f"{term} = _____",
-            "grammarFocus": "vocabulary-meaning",
-            "grammarNote": vocab_grammar_note(term, answer, str(item.get("usage", "")), choices, vocab_entries),
+            "grammarFocus": usage,
+            "grammarNote": vocab_grammar_note(term, answer, usage, choices, vocab_entries),
             "prompt": f"원본 어휘 자료에서 {term}의 뜻은?",
         })
     return items
+
 
 
 def build_source_items(
