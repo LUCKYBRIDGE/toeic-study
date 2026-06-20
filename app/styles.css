@@ -1912,4 +1912,90 @@ th {
   margin-bottom: 6px;
 }
 
+/* 마스터 제외 체크박스 스타일 */
+.exclude-mastered-setting {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
+/* 모바일 터치 타겟 보강 */
+.choice-button {
+  min-height: 48px; /* 모바일 터치 높이 준수 */
+  padding: 12px 18px;
+  font-size: 14.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* 가상 전체화면 모의고사 레이아웃 최적화 */
+.app-shell.virtual-fullscreen {
+  grid-template-columns: 1fr !important; /* 사이드바를 완전히 제거 */
+}
+
+.app-shell.virtual-fullscreen .sidebar {
+  display: none !important; /* 사이드바 가리기 */
+}
+
+.app-shell.virtual-fullscreen .main-content {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-shell.virtual-fullscreen #questionCard {
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1), 0 10px 20px -10px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+/* 태블릿 및 모바일 반응형 미디어 쿼리 보완 */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .main-content {
+    padding: 16px;
+  }
+
+  .choice-button {
+    font-size: 14px;
+    padding: 14px;
+  }
+
+  .home-counts {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 

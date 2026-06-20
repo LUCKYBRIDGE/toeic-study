@@ -109,8 +109,8 @@ const els = {
   practiceHome: $("#practiceHome"),
   homeSummary: $("#homeSummary"),
   homeTotal: $("#homeTotal"),
-  homeMeaning: $("#homeMeaning"),
-  homeTerm: $("#homeTerm"),
+  homeUnseen: $("#homeUnseen"),
+  homeMastered: $("#homeMastered"),
   homeWeak: $("#homeWeak"),
   emptyState: $("#emptyState"),
   questionCard: $("#questionCard"),
@@ -149,6 +149,7 @@ const els = {
   fullscreenIcon: $("#fullscreenIcon"),
   streakCount: $("#streakCount"),
   dailyGoalSelect: $("#dailyGoalSelect"),
+  excludeMasteredCheckbox: $("#excludeMasteredCheckbox"),
   progressBarFill: $("#progressBarFill"),
   progressText: $("#progressText"),
   successCard: $("#successCard"),
@@ -824,26 +825,44 @@ function todayPool(items) {
   return review.length ? review : items;
 }
 
+function isExcludeMasteredActive() {
+  return els.excludeMasteredCheckbox && els.excludeMasteredCheckbox.checked;
+}
+
 function modeItems(items = filteredItems()) {
-  if (state.mode === "all") return items;
-  if (state.mode === "weak") return items.filter(isWeakItem);
-  if (state.mode === "new") return items.filter(isNewItem);
-  if (state.mode === "paragraph") {
-    return items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
+  let pool = items;
+  if (state.mode === "weak") pool = items.filter(isWeakItem);
+  else if (state.mode === "new") pool = items.filter(isNewItem);
+  else if (state.mode === "paragraph") {
+    pool = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
   }
-  if (state.mode === "mixed") {
+  else if (state.mode === "mixed") {
     const byId = new Map();
     items.filter(isWeakItem).forEach((item) => byId.set(item.id, item));
     items.filter(isNewItem).forEach((item) => byId.set(item.id, item));
-    return byId.size ? Array.from(byId.values()) : items;
+    pool = byId.size ? Array.from(byId.values()) : items;
   }
-  return items;
+  
+  if (isExcludeMasteredActive()) {
+    const filtered = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+    if (filtered.length > 0) {
+      return filtered;
+    }
+  }
+  return pool;
 }
 
 function pickNextItem() {
   const items = filteredItems();
   if (!items.length) return null;
-  if (state.mode === "all") return items[Math.floor(Math.random() * items.length)];
+  if (state.mode === "all") {
+    let pool = items;
+    if (isExcludeMasteredActive()) {
+      const filtered = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+      if (filtered.length > 0) pool = filtered;
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
 
   let pool = modeItems(items);
   if (state.mode === "mixed") {
@@ -853,6 +872,14 @@ function pickNextItem() {
     const paragraphs = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
     pool = paragraphs.length ? paragraphs : items;
   }
+
+  if (isExcludeMasteredActive()) {
+    const filteredPool = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+    if (filteredPool.length > 0) {
+      pool = filteredPool;
+    }
+  }
+
   return chooseWeighted(pool);
 }
 
@@ -1107,12 +1134,15 @@ function renderMetrics() {
 
 function renderHome() {
   if (!els.practiceHome) return;
-  const total = state.dataset.items.length;
-  const attempts = state.progress.attempts.length;
-  const meaningCount = state.dataset.items.filter((item) => item.questionType === "meaning").length;
-  const termCount = state.dataset.items.filter((item) => item.questionType === "term").length;
-  const weakCount = weakItems().length;
+  const items = state.dataset.items;
+  const total = items.length;
+  const unseenCount = items.filter(isNewItem).length;
+  const weakCount = items.filter(isWeakItem).length;
+  const masteredCount = items.filter(item => isMasteredStats(existingItemStats(item.id))).length;
+  
+  // 마스터 단어 배제 상태일 때 실제 풀 수 있는 문제 수 계산
   const activeCount = modeItems().length;
+
   const modeLabel = state.mode === "mixed"
     ? "오늘 조합"
     : state.mode === "weak"
@@ -1122,13 +1152,27 @@ function renderHome() {
         : state.mode === "paragraph"
           ? "문단"
           : "전체";
-  els.homeTotal.textContent = String(total);
-  els.homeMeaning.textContent = String(meaningCount);
-  els.homeTerm.textContent = String(termCount);
-  els.homeWeak.textContent = String(weakCount);
-  els.homeSummary.textContent = attempts
-    ? `${attempts}회 풀었습니다. ${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`
-    : `${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`;
+
+  if (els.homeTotal) els.homeTotal.textContent = String(total);
+  if (els.homeUnseen) els.homeUnseen.textContent = String(unseenCount);
+  if (els.homeMastered) els.homeMastered.textContent = String(masteredCount);
+  if (els.homeWeak) els.homeWeak.textContent = String(weakCount);
+
+  const learnedCount = total - unseenCount;
+  const progressPct = total ? Math.round((learnedCount / total) * 100) : 0;
+  
+  let summaryText = "";
+  if (total === 0) {
+    summaryText = "자료 탭에서 study-items.approved.json을 로드하십시오.";
+  } else if (learnedCount === 0) {
+    summaryText = `🔥 토익 정복의 첫걸음! 전체 ${total}개 문제 중 아직 학습한 문제가 없습니다. '오늘 학습 시작'으로 출발하세요!`;
+  } else {
+    const excludeVal = els.excludeMasteredCheckbox?.checked;
+    const filterNote = excludeVal ? " (마스터 제외)" : "";
+    summaryText = `🔥 현재 전체 문제 중 <strong>${learnedCount}개(${progressPct}%)</strong>를 건드렸고, <strong>${masteredCount}개</strong>를 완벽히 마스터했습니다! 약점 ${weakCount}개를 극복 중이며, ${modeLabel}${filterNote} 모드에서 대기 중인 문제는 ${activeCount}개입니다.`;
+  }
+  
+  if (els.homeSummary) els.homeSummary.innerHTML = summaryText;
 }
 
 function weakItems(items = state.dataset.items) {
@@ -1249,6 +1293,12 @@ function isWeakStats(stats) {
   return stats.flagged
     || (stats.uncertain || 0) > 0
     || (stats.seen > 0 && accuracy < 0.75);
+}
+
+function isMasteredStats(stats) {
+  if (!stats) return false;
+  const accuracy = stats.seen ? stats.correct / stats.seen : 0;
+  return stats.seen >= 3 && accuracy >= 0.9 && (stats.streak || 0) >= 3;
 }
 
 function termStats(termKey, create = true) {
@@ -1775,6 +1825,10 @@ function bindEvents() {
     saveProgress();
     renderAll();
   });
+  els.excludeMasteredCheckbox?.addEventListener("change", (e) => {
+    localStorage.setItem("toeic-study.exclude-mastered", e.target.checked ? "true" : "false");
+    renderAll();
+  });
   els.successHomeButton?.addEventListener("click", showPracticeHome);
   els.successContinueButton?.addEventListener("click", continueStudy);
 
@@ -1880,6 +1934,9 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  if (els.excludeMasteredCheckbox) {
+    els.excludeMasteredCheckbox.checked = localStorage.getItem("toeic-study.exclude-mastered") === "true";
+  }
   await loadProgress();
   await loadInitialDataset();
   showPracticeHome();

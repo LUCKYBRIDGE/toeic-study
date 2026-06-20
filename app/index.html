@@ -101,6 +101,12 @@
                       <option value="50">50문제</option>
                     </select>
                   </div>
+                  <div class="exclude-mastered-setting">
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="excludeMasteredCheckbox" />
+                      <span>🎯 이미 마스터한 단어(많이 맞춘 단어) 제외하고 풀기</span>
+                    </label>
+                  </div>
                 </div>
                 <div class="home-actions">
                   <button class="primary-button" type="button" data-start-mode="mixed" data-start-type="all">오늘 학습 시작</button>
@@ -110,20 +116,20 @@
                 </div>
                 <div class="home-counts">
                   <div>
-                    <span>전체</span>
-                    <strong id="homeTotal">0</strong>
+                    <span>미학습 단어</span>
+                    <strong id="homeUnseen">0</strong>
                   </div>
                   <div>
-                    <span>단어→뜻</span>
-                    <strong id="homeMeaning">0</strong>
-                  </div>
-                  <div>
-                    <span>뜻→단어</span>
-                    <strong id="homeTerm">0</strong>
-                  </div>
-                  <div>
-                    <span>약점</span>
+                    <span>약점 단어</span>
                     <strong id="homeWeak">0</strong>
+                  </div>
+                  <div>
+                    <span>마스터 단어</span>
+                    <strong id="homeMastered">0</strong>
+                  </div>
+                  <div>
+                    <span>전체 단어</span>
+                    <strong id="homeTotal">0</strong>
                   </div>
                 </div>
               </section>

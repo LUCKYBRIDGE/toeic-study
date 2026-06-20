@@ -1919,6 +1919,92 @@ th {
   margin-bottom: 6px;
 }
 
+/* 마스터 제외 체크박스 스타일 */
+.exclude-mastered-setting {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
+/* 모바일 터치 타겟 보강 */
+.choice-button {
+  min-height: 48px; /* 모바일 터치 높이 준수 */
+  padding: 12px 18px;
+  font-size: 14.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* 가상 전체화면 모의고사 레이아웃 최적화 */
+.app-shell.virtual-fullscreen {
+  grid-template-columns: 1fr !important; /* 사이드바를 완전히 제거 */
+}
+
+.app-shell.virtual-fullscreen .sidebar {
+  display: none !important; /* 사이드바 가리기 */
+}
+
+.app-shell.virtual-fullscreen .main-content {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-shell.virtual-fullscreen #questionCard {
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1), 0 10px 20px -10px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+/* 태블릿 및 모바일 반응형 미디어 쿼리 보완 */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .main-content {
+    padding: 16px;
+  }
+
+  .choice-button {
+    font-size: 14px;
+    padding: 14px;
+  }
+
+  .home-counts {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 
 
 </style>
@@ -2018,6 +2104,12 @@ th {
                       <option value="50">50문제</option>
                     </select>
                   </div>
+                  <div class="exclude-mastered-setting">
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="excludeMasteredCheckbox" />
+                      <span>🎯 이미 마스터한 단어(많이 맞춘 단어) 제외하고 풀기</span>
+                    </label>
+                  </div>
                 </div>
                 <div class="home-actions">
                   <button class="primary-button" type="button" data-start-mode="mixed" data-start-type="all">오늘 학습 시작</button>
@@ -2027,20 +2119,20 @@ th {
                 </div>
                 <div class="home-counts">
                   <div>
-                    <span>전체</span>
-                    <strong id="homeTotal">0</strong>
+                    <span>미학습 단어</span>
+                    <strong id="homeUnseen">0</strong>
                   </div>
                   <div>
-                    <span>단어→뜻</span>
-                    <strong id="homeMeaning">0</strong>
-                  </div>
-                  <div>
-                    <span>뜻→단어</span>
-                    <strong id="homeTerm">0</strong>
-                  </div>
-                  <div>
-                    <span>약점</span>
+                    <span>약점 단어</span>
                     <strong id="homeWeak">0</strong>
+                  </div>
+                  <div>
+                    <span>마스터 단어</span>
+                    <strong id="homeMastered">0</strong>
+                  </div>
+                  <div>
+                    <span>전체 단어</span>
+                    <strong id="homeTotal">0</strong>
                   </div>
                 </div>
               </section>
@@ -2387,8 +2479,8 @@ const els = {
   practiceHome: $("#practiceHome"),
   homeSummary: $("#homeSummary"),
   homeTotal: $("#homeTotal"),
-  homeMeaning: $("#homeMeaning"),
-  homeTerm: $("#homeTerm"),
+  homeUnseen: $("#homeUnseen"),
+  homeMastered: $("#homeMastered"),
   homeWeak: $("#homeWeak"),
   emptyState: $("#emptyState"),
   questionCard: $("#questionCard"),
@@ -2427,6 +2519,7 @@ const els = {
   fullscreenIcon: $("#fullscreenIcon"),
   streakCount: $("#streakCount"),
   dailyGoalSelect: $("#dailyGoalSelect"),
+  excludeMasteredCheckbox: $("#excludeMasteredCheckbox"),
   progressBarFill: $("#progressBarFill"),
   progressText: $("#progressText"),
   successCard: $("#successCard"),
@@ -3102,26 +3195,44 @@ function todayPool(items) {
   return review.length ? review : items;
 }
 
+function isExcludeMasteredActive() {
+  return els.excludeMasteredCheckbox && els.excludeMasteredCheckbox.checked;
+}
+
 function modeItems(items = filteredItems()) {
-  if (state.mode === "all") return items;
-  if (state.mode === "weak") return items.filter(isWeakItem);
-  if (state.mode === "new") return items.filter(isNewItem);
-  if (state.mode === "paragraph") {
-    return items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
+  let pool = items;
+  if (state.mode === "weak") pool = items.filter(isWeakItem);
+  else if (state.mode === "new") pool = items.filter(isNewItem);
+  else if (state.mode === "paragraph") {
+    pool = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
   }
-  if (state.mode === "mixed") {
+  else if (state.mode === "mixed") {
     const byId = new Map();
     items.filter(isWeakItem).forEach((item) => byId.set(item.id, item));
     items.filter(isNewItem).forEach((item) => byId.set(item.id, item));
-    return byId.size ? Array.from(byId.values()) : items;
+    pool = byId.size ? Array.from(byId.values()) : items;
   }
-  return items;
+  
+  if (isExcludeMasteredActive()) {
+    const filtered = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+    if (filtered.length > 0) {
+      return filtered;
+    }
+  }
+  return pool;
 }
 
 function pickNextItem() {
   const items = filteredItems();
   if (!items.length) return null;
-  if (state.mode === "all") return items[Math.floor(Math.random() * items.length)];
+  if (state.mode === "all") {
+    let pool = items;
+    if (isExcludeMasteredActive()) {
+      const filtered = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+      if (filtered.length > 0) pool = filtered;
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
 
   let pool = modeItems(items);
   if (state.mode === "mixed") {
@@ -3131,6 +3242,14 @@ function pickNextItem() {
     const paragraphs = items.filter((item) => item.contextType === "paragraph" || item.sentence.length > 180);
     pool = paragraphs.length ? paragraphs : items;
   }
+
+  if (isExcludeMasteredActive()) {
+    const filteredPool = pool.filter(item => !isMasteredStats(existingItemStats(item.id)));
+    if (filteredPool.length > 0) {
+      pool = filteredPool;
+    }
+  }
+
   return chooseWeighted(pool);
 }
 
@@ -3385,12 +3504,15 @@ function renderMetrics() {
 
 function renderHome() {
   if (!els.practiceHome) return;
-  const total = state.dataset.items.length;
-  const attempts = state.progress.attempts.length;
-  const meaningCount = state.dataset.items.filter((item) => item.questionType === "meaning").length;
-  const termCount = state.dataset.items.filter((item) => item.questionType === "term").length;
-  const weakCount = weakItems().length;
+  const items = state.dataset.items;
+  const total = items.length;
+  const unseenCount = items.filter(isNewItem).length;
+  const weakCount = items.filter(isWeakItem).length;
+  const masteredCount = items.filter(item => isMasteredStats(existingItemStats(item.id))).length;
+  
+  // 마스터 단어 배제 상태일 때 실제 풀 수 있는 문제 수 계산
   const activeCount = modeItems().length;
+
   const modeLabel = state.mode === "mixed"
     ? "오늘 조합"
     : state.mode === "weak"
@@ -3400,13 +3522,27 @@ function renderHome() {
         : state.mode === "paragraph"
           ? "문단"
           : "전체";
-  els.homeTotal.textContent = String(total);
-  els.homeMeaning.textContent = String(meaningCount);
-  els.homeTerm.textContent = String(termCount);
-  els.homeWeak.textContent = String(weakCount);
-  els.homeSummary.textContent = attempts
-    ? `${attempts}회 풀었습니다. ${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`
-    : `${modeLabel}에서 지금 풀 수 있는 문제는 ${activeCount}개입니다.`;
+
+  if (els.homeTotal) els.homeTotal.textContent = String(total);
+  if (els.homeUnseen) els.homeUnseen.textContent = String(unseenCount);
+  if (els.homeMastered) els.homeMastered.textContent = String(masteredCount);
+  if (els.homeWeak) els.homeWeak.textContent = String(weakCount);
+
+  const learnedCount = total - unseenCount;
+  const progressPct = total ? Math.round((learnedCount / total) * 100) : 0;
+  
+  let summaryText = "";
+  if (total === 0) {
+    summaryText = "자료 탭에서 study-items.approved.json을 로드하십시오.";
+  } else if (learnedCount === 0) {
+    summaryText = `🔥 토익 정복의 첫걸음! 전체 ${total}개 문제 중 아직 학습한 문제가 없습니다. '오늘 학습 시작'으로 출발하세요!`;
+  } else {
+    const excludeVal = els.excludeMasteredCheckbox?.checked;
+    const filterNote = excludeVal ? " (마스터 제외)" : "";
+    summaryText = `🔥 현재 전체 문제 중 <strong>${learnedCount}개(${progressPct}%)</strong>를 건드렸고, <strong>${masteredCount}개</strong>를 완벽히 마스터했습니다! 약점 ${weakCount}개를 극복 중이며, ${modeLabel}${filterNote} 모드에서 대기 중인 문제는 ${activeCount}개입니다.`;
+  }
+  
+  if (els.homeSummary) els.homeSummary.innerHTML = summaryText;
 }
 
 function weakItems(items = state.dataset.items) {
@@ -3527,6 +3663,12 @@ function isWeakStats(stats) {
   return stats.flagged
     || (stats.uncertain || 0) > 0
     || (stats.seen > 0 && accuracy < 0.75);
+}
+
+function isMasteredStats(stats) {
+  if (!stats) return false;
+  const accuracy = stats.seen ? stats.correct / stats.seen : 0;
+  return stats.seen >= 3 && accuracy >= 0.9 && (stats.streak || 0) >= 3;
 }
 
 function termStats(termKey, create = true) {
@@ -4053,6 +4195,10 @@ function bindEvents() {
     saveProgress();
     renderAll();
   });
+  els.excludeMasteredCheckbox?.addEventListener("change", (e) => {
+    localStorage.setItem("toeic-study.exclude-mastered", e.target.checked ? "true" : "false");
+    renderAll();
+  });
   els.successHomeButton?.addEventListener("click", showPracticeHome);
   els.successContinueButton?.addEventListener("click", continueStudy);
 
@@ -4158,6 +4304,9 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  if (els.excludeMasteredCheckbox) {
+    els.excludeMasteredCheckbox.checked = localStorage.getItem("toeic-study.exclude-mastered") === "true";
+  }
   await loadProgress();
   await loadInitialDataset();
   showPracticeHome();
