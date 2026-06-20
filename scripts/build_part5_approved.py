@@ -739,7 +739,8 @@ def build_vocab_explanation(
     direction: str,
     choices: list[str],
     entries: list[dict],
-    usage: str
+    usage: str,
+    has_context: bool = True
 ) -> str:
     secondary_meanings = [m for m in meanings_list if m != answer]
     if secondary_meanings:
@@ -751,13 +752,17 @@ def build_vocab_explanation(
     
     if direction == "meaning":
         letter = "ABCD"[choices.index(answer)] if answer in choices else "?"
-        exposition = f"어휘 해설 | 문맥 속에서 가장 알맞은 뜻을 고르는 문제입니다. 문장 속에서 **{term}**은 **'{answer}'**(으)로 쓰였습니다. 따라서 정답은 ({letter})입니다."
+        if has_context:
+            exposition = f"어휘 해설 | 문맥 속에서 가장 알맞은 뜻을 고르는 문제입니다. 문장 속에서 **{term}**은 **'{answer}'**(으)로 쓰였습니다. 따라서 정답은 ({letter})입니다."
+        else:
+            exposition = f"어휘 해설 | 제시된 단어 **{term}**은(는) **'{answer}'**을(를) 뜻합니다. 따라서 정답은 ({letter})입니다."
     elif direction == "term":
         letter = "ABCD"[choices.index(term)] if term in choices else "?"
         exposition = f"어휘 해설 | 한글 뜻 **'{answer}'**에 해당하는 올바른 영단어를 고르는 문제입니다. 정답인 **{term}**은 **'{answer}'**을(를) 뜻합니다. 따라서 정답은 ({letter})입니다."
     else: # word
         letter = "ABCD"[choices.index(term)] if term in choices else "?"
         exposition = f"어휘 해설 | 문맥상 빈칸에 들어갈 가장 알맞은 어휘를 고르는 문제입니다. 문장에 **{term}**('{answer}')을(를) 넣었을 때 의미가 자연스럽습니다. 따라서 정답은 ({letter})입니다."
+
         
     analysis_lines = []
     for choice in choices:
@@ -787,7 +792,8 @@ def build_vocab_explanation(
 
 
 def vocab_grammar_note(term: str, answer: str, usage: str, choices: list[str], entries: list[dict]) -> str:
-    return build_vocab_explanation(term, answer, [answer], "meaning", choices, entries, usage)
+    return build_vocab_explanation(term, answer, [answer], "meaning", choices, entries, usage, has_context=False)
+
 
 
 def grammar_note(question_type: str, answer: str) -> tuple[str, str]:
@@ -1507,12 +1513,13 @@ VOCAB_TEMPLATES = {
 }
 
 
-def numbered_vocab_note(entry: dict, direction: str, choices: list[str], entries: list[dict]) -> str:
+def numbered_vocab_note(entry: dict, direction: str, choices: list[str], entries: list[dict], has_context: bool) -> str:
     term = entry["term"]
     answer = entry["answer"]
     meanings_list = entry.get("meanings") or [answer]
     usage = infer_usage_from_meaning(term, answer)
-    return build_vocab_explanation(term, answer, meanings_list, direction, choices, entries, usage)
+    return build_vocab_explanation(term, answer, meanings_list, direction, choices, entries, usage, has_context)
+
 
 
 def stable_choices_by_usage(answer: str, usage: str, entries: list[dict], pool_key: str, seed: str) -> list[str]:
@@ -1635,7 +1642,7 @@ def build_numbered_vocab_items() -> list[dict]:
             "sentence": meaning_sentence,
             "sentenceKo": meaning_sentence_ko,
             "blankSentence": blank_meaning_sentence,
-            "grammarNote": f"{numbered_vocab_note(entry, 'meaning', meaning_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
+            "grammarNote": f"{numbered_vocab_note(entry, 'meaning', meaning_choices, entries, has_smart)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
             "prompt": f"{number}번 단어 {term}의 뜻은?",
         })
 
@@ -1661,7 +1668,7 @@ def build_numbered_vocab_items() -> list[dict]:
             "sentence": meaning_sentence,
             "sentenceKo": meaning_sentence_ko,
             "blankSentence": blank_term_sentence,
-            "grammarNote": f"{numbered_vocab_note(entry, 'term', term_choices, entries)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
+            "grammarNote": f"{numbered_vocab_note(entry, 'term', term_choices, entries, has_smart)}\n\n💡 **실전 적용 문맥**\n{custom_note}",
             "prompt": f"'{answer}'에 해당하는 영어 단어는?",
         })
 
